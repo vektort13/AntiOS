@@ -7,6 +7,10 @@ You need to install Python 3.5.6 - https://www.python.org/downloads/release/pyth
 !!!ATTENTION!!!
 When you install Python, make sure that you select "Custom" installation mode and check "Install for all users" 
 
+## H2
+How to use:
+Open batch file "START.bat" with Administrator privileges
+
 List of changed identificators:
 
 * Username
