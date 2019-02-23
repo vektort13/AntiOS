@@ -2,13 +2,12 @@
 
 Change Windows and hardware identifiers so that change system footprint.
 
-You need to install Python 3.5.6 - https://www.python.org/downloads/release/python-365/
+##You need to install Python 3.5.6 - https://www.python.org/downloads/release/python-365/
 
 !!!ATTENTION!!!
 When you install Python, make sure that you select "Custom" installation mode and check "Install for all users" 
 
-## H2
-How to use:
+## How to use:
 Open batch file "START.bat" with Administrator privileges
 
 List of changed identificators:
