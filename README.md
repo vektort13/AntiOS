@@ -1,8 +1,10 @@
 # AntiOS
 
-Change Windows and hardware identifiers so that change system footprint.
+Change Windows and hardware identifiers so that change system fingerprint.
 
-## You need to install Python 3.5.6 - https://www.python.org/downloads/release/python-365/
+## You need to install at least Python 3.5.6, last version preferred
+
+https://www.python.org/downloads/
 
 !!!ATTENTION!!!
 When you install Python, make sure that you select "Custom" installation mode and check "Install for all users" 
