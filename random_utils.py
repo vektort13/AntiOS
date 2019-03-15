@@ -7,24 +7,15 @@ import random
 import time
 import datetime
 import itertools
-import platform
 import binascii
 
-logger = log_helper.setup_logger(name="random_utils", level=logging.DEBUG, log_to_file=False)
+logger = log_helper.setup_logger(name="random_utils", level=logging.INFO, log_to_file=False)
 
 
 __doc__ = """Service functions for generation random values and sequences with given format.
 Hostname, user name and MAC address, randomly selected from lists imported from identity_data module,
 random unix time, random string sequences. Helper functions for writing special values to Windows registry
-Also is_x64os() helper function provided
 """
-
-
-def is_x64os():
-    """
-    :return: True if system is 64-bit, False otherwise
-    """
-    return platform.machine().endswith('64')
 
 
 def random_hostname():
@@ -101,6 +92,6 @@ def random_volume_id():
     """
     :return: Random Volume ID, XXXX-XXXX, where X is a series of numbers and letters
     """
-    x1 = str(binascii.b2a_hex(os.urandom(2)))
-    x2 = str(binascii.b2a_hex(os.urandom(2)))
+    x1 = binascii.b2a_hex(os.urandom(2)).decode("utf-8")
+    x2 = binascii.b2a_hex(os.urandom(2)).decode("utf-8")
     return "{0}-{1}".format(x1, x2)

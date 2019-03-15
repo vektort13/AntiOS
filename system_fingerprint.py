@@ -1,4 +1,4 @@
-import sys
+import os
 import logging
 import log_helper
 import random
@@ -11,6 +11,7 @@ logger = log_helper.setup_logger(name="system_fingerpring", level=logging.INFO, 
 
 class WinFingerprint:
     """
+    Windows-related fingerprinting identifiers, like edition, version, build, updates
     """
     EDITIONS = {
         7: [["Starter", "Starter"],
@@ -83,7 +84,7 @@ class WinFingerprint:
         self.build_guid = str(uuid.uuid4()) if self.windows_version == 7 else "ffffffff-ffff-ffff-ffff-ffffffffffff"
         self.uuid_id4 = str(uuid.uuid4())
         self.ie_service_update = random.choice(WinFingerprint.IE_SERVICE_UPDATES)
-        self.ie_install_date = random.sample(range(0, sys.maxsize), 2)
+        self.ie_install_date = bytearray(os.urandom(8))
         self.digital_product_id = []
         self.digital_product_id4 = []
         self.product_id = self.__random_product_id()
