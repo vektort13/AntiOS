@@ -1,3 +1,3 @@
 @echo off
-%~dp0generate_rnd_fingerprint.py
+%~dp0generate_fingerprint.py
 @pause
