@@ -2,7 +2,7 @@
 
 Change Windows and hardware identifiers so that change system fingerprint.
 
-### You need to install at least Python 3.5.6, last version preferred
+### You need to install at least Python 3.6, last version preferred
 
 https://www.python.org/downloads/
 
@@ -10,7 +10,10 @@ https://www.python.org/downloads/
 When you install Python, make sure that you select "Custom" installation mode and check "Install for all users" 
 
 ## How to use:
-Open batch file "START.bat" with Administrator privileges
+
+Run `python.exe generate_fingerprint.py --help` for available options.
+
+If you are not comfortable with the command-line, simply start the batch file "START.bat" with Administrator privileges
 
 List of changed identificators:
 
