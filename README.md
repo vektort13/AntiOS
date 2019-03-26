@@ -13,7 +13,7 @@ When you install Python, make sure that you select "Custom" installation mode an
 
 Run `python.exe generate_fingerprint.py --help` for available options.
 
-If you are not comfortable with the command-line, simply start the batch file "START.bat" with Administrator privileges
+If you are not comfortable with the command-line, simply start the batch file `START.bat` with Administrator privileges
 
 List of changed identificators:
 
