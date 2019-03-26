@@ -1,3 +1,3 @@
 @echo off
-%~dp0generate_fingerprint.py
+python.exe %~dp0generate_fingerprint.py
 @pause
