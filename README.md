@@ -7,7 +7,8 @@ Change Windows and hardware identifiers so that change system fingerprint.
 https://www.python.org/downloads/
 
 !!!ATTENTION!!!
-When you install Python, make sure that you select "Custom" installation mode and check "Install for all users" 
+* When you install Python, make sure that you select "Custom" installation mode and check "Install for all users" 
+* On the current stage this application does not back up your system initial state, run it in the virtual machine not to damage your host system
 
 ## How to use:
 
