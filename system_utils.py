@@ -13,6 +13,6 @@ def is_x64os():
 
 def platform_version():
     """
-    :return: True if system is 64-bit, False otherwise
+    :return: True if hardware platform is 64-bit, False otherwise
     """
     return platform.platform()
