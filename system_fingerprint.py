@@ -184,6 +184,7 @@ class WinFingerprint:
         random_digital_id = random.sample(range(0, 255), k=164)
         random_digital_id[0x00:0x07] = [0xA4, 0, 0, 0, 0x3, 0, 0, 0]
         random_digital_id[0x08:0x19] = list(self.product_id)
+        random_digital_id[0xA0:0xA3] = [0xB9, 0xEC, 0x21, 0x73]
         return random_digital_id
 
     @staticmethod
@@ -217,13 +218,13 @@ class WinFingerprint:
         product_edition = random_utils.disperse_string(self.edition_id)
         random_digital_id4[0x0118:0x0118 + len(product_edition) + 1] = product_edition
         # 0x0328 - random length 80
-        radom_block = random.sample(range(0, 0xFF), 80)
-        random_digital_id4[0x0328:0x0328 + len(radom_block) + 1] = radom_block
+        random_block = random.sample(range(0, 0xFF), 80)
+        random_digital_id4[0x0328:0x0328 + len(random_block) + 1] = random_block
         # 0x0378 - XNN-NNNNN
         random_id2_string = "{0}{1}-{2}".format(
             ''.join(random.sample(string.ascii_uppercase, 1)),
             random_utils.random_digit_string(2),
-            random_utils.random_digit_string(3)
+            random_utils.random_digit_string(5)
         )
         random_id2 = random_utils.disperse_string(random_id2_string)
         random_digital_id4[0x0378:0x0378 + len(random_id2) + 1] = random_id2

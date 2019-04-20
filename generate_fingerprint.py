@@ -3,12 +3,14 @@ import sys
 import argparse
 import logging
 import winreg
+import random
 import log_helper
 import system_fingerprint
 import hardware_fingerprint
 import telemetry_fingerprint
 import random_utils
 import registry_helper
+
 
 from registry_helper import RegistryKeyType, Wow64RegistryEntry
 from system_utils import is_x64os, platform_version
@@ -21,8 +23,8 @@ def generate_telemetry_fingerprint():
     IDs related to Windows 10 Telemetry
     All the telemetry is getting around the DeviceID registry value
     It can be found in the following kays:
-    HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\SQMClient
-    HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Diagnostics\DiagTrack\SettingsRequests
+    HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SQMClient
+    HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Diagnostics\\DiagTrack\\SettingsRequests
     """
     windows_ver = platform_version()
     if not windows_ver.startswith("Windows-10"):
