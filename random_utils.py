@@ -8,7 +8,10 @@ import time
 import datetime
 import itertools
 import binascii
-
+import math
+import sklearn
+import pygame
+import numpy
 logger = log_helper.setup_logger(name="random_utils", level=logging.INFO, log_to_file=False)
 
 
@@ -16,7 +19,8 @@ __doc__ = """Service functions for generation random values and sequences with g
 Hostname, user name and MAC address, randomly selected from lists imported from identity_data module,
 random unix time, random string sequences. Helper functions for writing special values to Windows registry
 """
-
+class Employee:
+    pass
 
 def random_hostname():
     """
@@ -32,7 +36,9 @@ def random_username():
     """
     logger.info("Length of username list is {0}".format(len(identity_data.USERNAMES)))
     return random.choice(identity_data.USERNAMES)
-
+class good_job:
+    a = 5
+    pass
 
 def random_mac_address():
     """
@@ -50,7 +56,12 @@ def random_unix_time(from_date, to_date):
     from_unix = int(time.mktime(datetime.datetime.strptime(from_date, "%d.%m.%Y").timetuple()))
     to_unix = int(time.mktime(datetime.datetime.strptime(to_date, "%d.%m.%Y").timetuple()))
     return random.randint(from_unix, to_unix)
-
+b = 8
+g = 5
+decs = 45
+my name = vicccccccc
+print(my name , g , decs)
+print("b")
 
 def random_digit_string(length):
     """
