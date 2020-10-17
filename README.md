@@ -16,7 +16,7 @@ Run `python.exe generate_fingerprint.py --help` for available options.
 
 If you are not comfortable with the command-line, simply start the batch file `START.bat` with Administrator privileges
 
-List of changed identificators:
+List of all changed identificators are:
 
 * Username
 * Hostname
