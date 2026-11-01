@@ -15,6 +15,7 @@ import subprocess
 from typing import Any, Callable
 
 from .windows_process import hidden_process_kwargs, system_executable
+from .vendor_status import consistent_state, realtime_state
 
 Runner = Callable[..., subprocess.CompletedProcess]
 
@@ -132,14 +133,16 @@ def _find_kaspersky_avp() -> Path | None:
 
 
 def _parse_kaspersky_status(text: str) -> bool | None:
-    normalized = re.sub(r"\s+", " ", text).strip().casefold()
-    if not normalized:
-        return None
-    if any(word in normalized for word in ("running", "started", "starting", "resuming")):
-        return True
-    if any(word in normalized for word in ("stopped", "paused", "snoozed", "stopping", "pausing")):
-        return False
-    return None
+    states = []
+    lines = [line for line in text.splitlines() if line.strip()]
+    for line in lines:
+        match = re.match(r"^\s*File_Monitoring\b(?:\s*[:=]\s*|\s+)(.+)$", line, re.I)
+        if match:
+            value = re.split(r"\t+| {2,}", match[1].strip(), maxsplit=1)[0]
+            states.append(realtime_state(value))
+    if states:
+        return consistent_state(states)
+    return realtime_state(lines[0]) if len(lines) == 1 else None
 
 
 def probe_kaspersky_file_monitoring(

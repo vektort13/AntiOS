@@ -1,5 +1,6 @@
 """ClamAV repair ownership and failure-recovery source contracts."""
 from pathlib import Path
+import json
 
 BASE = Path(__file__).resolve().parents[1]
 
@@ -51,7 +52,9 @@ def test_pure_predicates_are_packaged_and_run_in_windows_ci():
     assert helper.is_file() and smoke.is_file()
     for func in ("Test-AntiOSRepairService", "Test-AntiOSRepairTask", "Assert-AntiOSRepairPostconditions"):
         assert func in helper.read_text("utf-8")
-    assert "scripts\\clamav-repair-validation.ps1" in stage
+    runtime = json.loads((BASE / "release/windows-runtime-files.json").read_text("utf-8"))
+    assert "scripts/clamav-repair-validation.ps1" in runtime["files"]
+    assert '"release-payload.py"' in stage and "stage-runtime $stage" in stage
     assert '"clamav-repair-validation.ps1"' in installer
     assert "tests/clamav-repair-validation-smoke.ps1" in workflow
 

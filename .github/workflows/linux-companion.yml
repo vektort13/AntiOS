@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   linux-companion:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
       - name: Install test/build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clamav-daemon python3-tk
+          sudo apt-get install -y clamav-daemon python3-tk xvfb xauth
           python -m pip install --upgrade pip
           python -m pip install pytest pyinstaller -e .
       - name: Linux companion tests
@@ -42,7 +42,6 @@ jobs:
           pyinstaller --clean --noconfirm --onedir --contents-directory _linux_gui --windowed --name AntiOS-GUI antios_gui_entry.py
           ./dist/AntiOS/AntiOS --version
           ./dist/AntiOS/AntiOS coexistence-status --json
-          ./dist/AntiOS-GUI/AntiOS-GUI --self-test
       - name: Package
         run: |
           mkdir -p linux-package
@@ -51,6 +50,13 @@ jobs:
           cp README.md LICENSE NOTICE docs/LINUX.md linux-package/
           tar -C linux-package -czf AntiOS-linux-x64.tar.gz .
           sha256sum AntiOS-linux-x64.tar.gz > AntiOS-linux-x64.tar.gz.sha256
+      - name: Verify packaged Linux GUI
+        run: |
+          smoke_root="$(mktemp -d)"
+          trap 'rm -rf "$smoke_root"' EXIT
+          tar -xzf AntiOS-linux-x64.tar.gz -C "$smoke_root"
+          "$smoke_root/AntiOS-GUI/AntiOS-GUI" --self-test
+          xvfb-run -a "$smoke_root/AntiOS-GUI/AntiOS-GUI" --ui-self-test
       - uses: actions/upload-artifact@v4
         with:
           name: AntiOS-linux-x64

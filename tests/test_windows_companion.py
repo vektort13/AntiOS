@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 import antios.windows_companion as wc
 
 
@@ -54,3 +56,23 @@ def test_companion_policy_never_mutates_vendor(monkeypatch):
 
 def test_unknown_localized_kaspersky_output_stays_unknown():
     assert wc._parse_kaspersky_status("Статус профиля: работает") is None
+
+
+@pytest.mark.parametrize("state, expected", [
+    ("Running", True), ("Started", True), ("Stopped", False),
+    ("Not Running", False), ("Not Started", False),
+    ("Starting", None), ("Resuming", None), ("Stopping", None),
+])
+def test_kaspersky_component_state_requires_completed_activation(state, expected):
+    assert wc._parse_kaspersky_status(f"File_Monitoring {state}") is expected
+
+
+def test_kaspersky_status_ignores_other_profiles_and_rejects_conflicts():
+    assert wc._parse_kaspersky_status("Updater Running\nFile_Monitoring Stopped") is False
+    assert wc._parse_kaspersky_status("File_Monitoring Running\nFile_Monitoring Stopped") is None
+    assert wc._parse_kaspersky_status("Starting\nRunning") is None
+
+
+def test_kaspersky_status_accepts_profile_columns_and_compact_labels():
+    assert wc._parse_kaspersky_status("Task      State\nFile_Monitoring    Running    -") is True
+    assert wc._parse_kaspersky_status("File_Monitoring:Not Running") is False

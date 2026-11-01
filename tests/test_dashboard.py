@@ -345,3 +345,18 @@ def test_failed_elevated_maintenance_keeps_resident_setting_unchanged(monkeypatc
         Dashboard.set_resident_protection_enabled(dashboard, True)
     assert dashboard.config.protection.resident_enabled is False
     assert saves == [True, False]
+def test_refresh_callback_preserves_the_collection_error(monkeypatch):
+    from types import SimpleNamespace
+    import antios.dashboard as dashboard
+
+    queued, errors = [], []
+    app = SimpleNamespace(
+        language="en", root=SimpleNamespace(after=lambda delay, callback: queued.append(callback)),
+        _show_error=errors.append,
+    )
+    def fail(_language):
+        raise RuntimeError("collector unavailable")
+    monkeypatch.setattr(dashboard, "collect_dashboard_data", fail)
+    dashboard.Dashboard._worker(app)
+    queued[0]()
+    assert errors == ["collector unavailable"]

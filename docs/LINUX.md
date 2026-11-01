@@ -2,6 +2,11 @@
 
 Linux support is a supplemental companion mode.
 
+The portable x86_64 build targets glibc 2.39 or newer (Ubuntu 24.04 LTS
+or a compatible distribution). The desktop interface requires an X11 display
+or XWayland. Older glibc versions and musl-based distributions are not supported
+by the portable binaries; the CLI can also be installed from the Python package.
+
 ## Public scope
 
 - read-only system/security diagnostics;

@@ -3434,7 +3434,7 @@ class Dashboard:
         try:
             data = collect_dashboard_data(self.language)
         except Exception as exc:
-            self.root.after(0, lambda: self._show_error(str(exc)))
+            self.root.after(0, lambda message=str(exc): self._show_error(message))
             return
         self.root.after(0, lambda: self._render(data))
 
@@ -3748,7 +3748,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--ui-self-test",
         action="store_true",
-        help="Build the hidden Windows GUI, Antivirus and Settings pages, then exit.",
+        help="Build the platform GUI without starting background services, then exit.",
     )
     parser.add_argument(
         "--lang",
@@ -3763,8 +3763,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.self_test:
         assert "bg" in THEME and "ok" in STATUS_STYLE
+        if sys.platform.startswith("linux"):
+            from .linux_dashboard import validate_runtime
+            validate_runtime()
         return 0
     if args.ui_self_test:
+        if sys.platform.startswith("linux"):
+            from .linux_dashboard import launch as launch_linux
+            return launch_linux(args.lang, self_test=True)
         if not is_windows():
             return 0
         import tkinter as tk

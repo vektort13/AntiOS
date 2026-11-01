@@ -16,6 +16,8 @@ on:
       - "antios_gui_entry.py"
       - "antios_guard_entry.py"
       - "pyproject.toml"
+      - "setup.py"
+      - "MANIFEST.in"
       - ".github/workflows/windows-release.yml"
   push:
     branches: ["master"]
@@ -136,7 +138,11 @@ jobs:
           .\wheel-smoke\Scripts\python.exe -m pip install --upgrade pip
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $wheel = (Get-ChildItem .\python-dist\*.whl | Select-Object -First 1).FullName
+          python scripts/release-payload.py verify-wheel $wheel
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\wheel-smoke\Scripts\python.exe -m pip install $wheel
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\wheel-smoke\Scripts\python.exe -I -c "from antios.protection_repair import _script_path, _bootstrap_script_path, _bootstrap_manifest_path; assert all(p.is_file() for p in (_script_path(), _bootstrap_script_path(), _bootstrap_manifest_path())); print('Installed wheel resources: OK')"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\wheel-smoke\Scripts\antios.exe --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -469,11 +475,8 @@ jobs:
           Copy-Item .\dist\AntiOS-GUI\* .\package\ -Recurse -Force
           Copy-Item .\dist\AntiOS-Guard\* .\package\ -Recurse -Force
           Copy-Item .\build\native\windows\AntiOS-AmsiProvider.dll .\package\AntiOS-AmsiProvider.dll -Force
-          Copy-Item .\native\windows\amsi\Install-AmsiProvider.ps1 .\package\Install-AmsiProvider.ps1 -Force
-          Copy-Item .\native\windows\LICENSE.microsoft .\package\LICENSE.native-MS-PL.txt -Force
-          Copy-Item .\scripts\guard-startup.ps1 .\package\guard-startup.ps1
-          Copy-Item .\scripts\dashboard-startup.ps1 .\package\dashboard-startup.ps1
-          Copy-Item .\scripts\protection-engine.ps1 .\package\protection-engine.ps1
+          python scripts/release-payload.py stage-runtime .\package
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item .\scripts\install.ps1 .\package\install.ps1
           Copy-Item .\scripts\uninstall.ps1 .\package\uninstall.ps1
           Copy-Item .\README.md .\package\README.md
@@ -518,6 +521,8 @@ jobs:
           ) | Set-Content .\package\BUILD_INFO.txt
           "- Authenticode: $signing" | Add-Content $env:GITHUB_STEP_SUMMARY
           Compress-Archive -Path .\package\* -DestinationPath .\AntiOS-windows-x64.zip -Force
+          python scripts/release-payload.py verify-portable .\AntiOS-windows-x64.zip
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $hash = (Get-FileHash .\AntiOS-windows-x64.zip -Algorithm SHA256).Hash.ToLower()
           "$hash  AntiOS-windows-x64.zip" | Set-Content -NoNewline .\AntiOS-windows-x64.zip.sha256
           Copy-Item ./installer-output/AntiOS-Setup.exe ./AntiOS-Setup.exe -Force
@@ -552,8 +557,7 @@ jobs:
 
 
   build-linux:
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
@@ -566,7 +570,7 @@ jobs:
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clamav-daemon python3-tk
+          sudo apt-get install -y clamav-daemon python3-tk xvfb xauth
           python -m pip install --upgrade pip
           python -m pip install pytest pyinstaller -e .
 
@@ -588,7 +592,6 @@ jobs:
           pyinstaller --clean --noconfirm --onedir --contents-directory _linux_gui --windowed --name AntiOS-GUI antios_gui_entry.py
           ./dist/AntiOS/AntiOS --version
           ./dist/AntiOS/AntiOS coexistence-status --json
-          ./dist/AntiOS-GUI/AntiOS-GUI --self-test
 
       - name: Package Linux release
         run: |
@@ -599,12 +602,20 @@ jobs:
           {
             echo "AntiOS version: $(tr -d '\r\n' < release/VERSION)"
             echo "Commit: $GITHUB_SHA"
-            echo "Build runner: ubuntu-latest"
+            echo "Build runner: ubuntu-24.04"
             echo "Architecture: x86_64"
             echo "License: Apache-2.0"
           } > linux-package/BUILD_INFO.txt
           tar -C linux-package -czf AntiOS-linux-x64.tar.gz .
           sha256sum AntiOS-linux-x64.tar.gz > AntiOS-linux-x64.tar.gz.sha256
+
+      - name: Verify packaged Linux GUI
+        run: |
+          smoke_root="$(mktemp -d)"
+          trap 'rm -rf "$smoke_root"' EXIT
+          tar -xzf AntiOS-linux-x64.tar.gz -C "$smoke_root"
+          "$smoke_root/AntiOS-GUI/AntiOS-GUI" --self-test
+          xvfb-run -a "$smoke_root/AntiOS-GUI/AntiOS-GUI" --ui-self-test
 
       - name: Attest Linux archive provenance
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'

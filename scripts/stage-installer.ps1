@@ -38,19 +38,11 @@ if (-not (Test-Path -LiteralPath $amsiProvider -PathType Leaf)) {
 }
 Copy-Item -LiteralPath $amsiProvider -Destination (Join-Path $stage "AntiOS-AmsiProvider.dll") -Force
 
+python (Join-Path $PSScriptRoot "release-payload.py") stage-runtime $stage
+if ($LASTEXITCODE -ne 0) { throw "Windows runtime resource staging failed." }
+
 foreach ($path in @(
-    "scripts\guard-startup.ps1",
-    "scripts\dashboard-startup.ps1",
-    "scripts\protection-engine.ps1",
-    "scripts\clamav-trust.ps1",
-    "scripts\clamav-repair-validation.ps1",
-    "scripts\protection-bootstrap.ps1",
-    "scripts\protection-repair.ps1",
-    "scripts\protection-first-run.ps1",
-    "native\windows\amsi\Install-AmsiProvider.ps1",
-    "native\windows\LICENSE.microsoft",
     "docs\COEXISTENCE.md",
-    "release\clamav-windows.json",
     "README.md",
     "README.ru.md",
     "README.es.md",

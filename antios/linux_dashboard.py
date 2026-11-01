@@ -32,18 +32,26 @@ def summarize(status: dict[str, Any]) -> list[tuple[str, str]]:
     ]
 
 
-def launch(language: str | None = None, *, background: bool = False) -> int:
-    if background:
-        raise RuntimeError("Linux companion dashboard does not provide tray/background mode yet")
+def validate_runtime() -> None:
     try:
-        import tkinter as tk
-        from tkinter import filedialog, messagebox
+        import tkinter  # noqa: F401 -- load the actual Tcl/Tk shared libraries
     except ImportError as exc:
         raise RuntimeError(
-            "Linux dashboard requires Tk (for example package python3-tk). CLI companion mode works without Tk."
+            "Linux dashboard requires a compatible Tcl/Tk runtime "
+            f"(for example package python3-tk): {exc}. CLI companion mode works without Tk."
         ) from exc
 
+
+def launch(language: str | None = None, *, background: bool = False, self_test: bool = False) -> int:
+    if background:
+        raise RuntimeError("Linux companion dashboard does not provide tray/background mode yet")
+    validate_runtime()
+    import tkinter as tk
+    from tkinter import filedialog, messagebox
+
     root = tk.Tk()
+    if self_test:
+        root.withdraw()
     root.title("AntiOS — Linux Companion")
     root.geometry("820x560")
     root.minsize(680, 460)
@@ -133,6 +141,12 @@ def launch(language: str | None = None, *, background: bool = False) -> int:
     tk.Button(buttons, text="Scan folder", command=choose_folder).pack(side="left", padx=(8, 0))
     tk.Button(buttons, text="Export status JSON", command=export_status).pack(side="left", padx=(8, 0))
 
+    if self_test:
+        try:
+            root.update_idletasks()
+        finally:
+            root.destroy()
+        return 0
     refresh()
     root.mainloop()
     return 0

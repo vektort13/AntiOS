@@ -1,5 +1,6 @@
 """Publisher-pinned ClamAV trust boundaries and integration contracts."""
 from pathlib import Path
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -58,7 +59,9 @@ def test_engine_trust_receipt_is_archive_sha256_bound():
 def test_engine_helper_in_installer_and_rollback_manifest():
     stage = source("scripts/stage-installer.ps1")
     nsis = source("installer/AntiOS.nsi")
-    assert '"scripts\\clamav-trust.ps1"' in stage
+    runtime = json.loads(source("release/windows-runtime-files.json"))
+    assert "scripts/clamav-trust.ps1" in runtime["files"]
+    assert '"release-payload.py"' in stage and "stage-runtime $stage" in stage
     assert '"clamav-trust.ps1"' in stage
     assert '!insertmacro ${OP} "clamav-trust.ps1"' in nsis
 

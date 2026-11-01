@@ -1,0 +1,6 @@
+include release/windows-runtime-files.json
+include release/clamav-windows.json
+include scripts/release-payload.py
+recursive-include scripts *.ps1
+include native/windows/amsi/Install-AmsiProvider.ps1
+include native/windows/LICENSE.microsoft

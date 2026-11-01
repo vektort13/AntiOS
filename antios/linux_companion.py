@@ -14,6 +14,8 @@ import subprocess
 import sys
 from typing import Any
 
+from .vendor_status import consistent_state, realtime_state
+
 _TRUSTED_EXEC_PREFIXES = (
     Path("/usr/bin"),
     Path("/usr/sbin"),
@@ -120,12 +122,7 @@ def _task_state(executable: Path, *names: str) -> tuple[bool | None, str | None]
         result = _safe_probe(executable, "--get-task-state", name)
         if not result["ok"]:
             continue
-        text = result["stdout"].strip().lower()
-        if "started" in text or "running" in text:
-            return True, name
-        if any(word in text for word in ("stopped", "suspended", "stopping", "suspending")):
-            return False, name
-        return None, name
+        return realtime_state(result["stdout"]), name
     return None, None
 
 
@@ -157,14 +154,16 @@ def probe_kaspersky() -> dict[str, Any]:
 
 
 def _drweb_spider_state(text: str) -> bool | None:
-    spider_lines = [line.lower() for line in text.splitlines() if "spider" in line.lower()]
-    if not spider_lines:
-        return None
-    if any(any(word in line for word in ("running", "started")) for line in spider_lines):
-        return True
-    if any(any(word in line for word in ("stopped", "not started", "inactive")) for line in spider_lines):
-        return False
-    return None
+    states = []
+    for line in text.splitlines():
+        match = re.match(
+            r"^\s*(?:SpIDer\s+Guard|LinuxSpider|drweb-spider)\b"
+            r"(?:\s*\[\d+\]|\s+\(\d+\))?\s*(?:[:=]\s*|\s+)(.+)$",
+            line, re.I,
+        )
+        if match:
+            states.append(realtime_state(match[1]))
+    return consistent_state(states)
 
 
 def probe_drweb() -> dict[str, Any]:

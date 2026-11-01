@@ -1,8 +1,34 @@
 from pathlib import Path
 import subprocess
 
+import pytest
+
 import antios.linux_companion as companion
 from antios.linux_health import parse_os_release
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("SpIDer Guard: running", True),
+    ("LinuxSpider[123]: started", True),
+    ("SpIDer Guard: not started", False),
+    ("SpIDer Guard: not running", False),
+    ("LinuxSpider: starting", None),
+    ("LinuxSpider: stopped\nConfigD: running, Installed: LinuxSpider", False),
+    ("SpIDer Gate: running", None),
+    ("Installed: LinuxSpider\nShould run: LinuxSpider", None),
+    ("LinuxSpider: running\nLinuxSpider: stopped", None),
+])
+def test_drweb_reports_only_the_file_monitors_own_state(text, expected):
+    assert companion._drweb_spider_state(text) is expected
+
+
+def test_kaspersky_linux_negative_task_state_remains_inactive(monkeypatch):
+    monkeypatch.setattr(companion, "_safe_probe", lambda *args: {
+        "ok": True, "stdout": "State: not started",
+    })
+    assert companion._task_state(Path("/fixture"), "File_Threat_Protection") == (
+        False, "File_Threat_Protection",
+    )
 
 
 def _result(code=0, out="", err=""):

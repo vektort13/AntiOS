@@ -48,7 +48,7 @@ version = { attr = "antios.__version__" }
 include = ["antios*"]
 
 [tool.setuptools.package-data]
-antios = ["assets/icons/*.png"]
+antios = ["assets/icons/*.png", "assets/windows/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "files": [
+    "scripts/guard-startup.ps1",
+    "scripts/dashboard-startup.ps1",
+    "scripts/protection-engine.ps1",
+    "scripts/clamav-trust.ps1",
+    "scripts/clamav-repair-validation.ps1",
+    "scripts/protection-bootstrap.ps1",
+    "scripts/protection-repair.ps1",
+    "scripts/protection-first-run.ps1",
+    "native/windows/amsi/Install-AmsiProvider.ps1",
+    "native/windows/LICENSE.microsoft",
+    "release/clamav-windows.json"
+  ]
+}

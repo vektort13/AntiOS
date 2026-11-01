@@ -14,36 +14,28 @@ def _is_windows() -> bool:
     return os.name == "nt"
 
 
-def _script_path() -> Path:
+def _runtime_file(name: str, source_directory: str) -> Path:
     if getattr(sys, "frozen", False):
-        candidate = Path(sys.executable).resolve().parent / "protection-repair.ps1"
+        candidate = Path(sys.executable).resolve().parent / name
     else:
-        candidate = Path(__file__).resolve().parents[1] / "scripts" / "protection-repair.ps1"
+        candidate = Path(__file__).resolve().parent / "assets" / "windows" / name
+        if not candidate.is_file():
+            candidate = Path(__file__).resolve().parents[1] / source_directory / name
     if not candidate.is_file():
-        raise FileNotFoundError(f"Protection repair script is missing: {candidate}")
+        raise FileNotFoundError(f"Protection runtime resource is missing: {candidate}")
     return candidate
 
 
+def _script_path() -> Path:
+    return _runtime_file("protection-repair.ps1", "scripts")
 
 
 def _bootstrap_script_path() -> Path:
-    if getattr(sys, "frozen", False):
-        candidate = Path(sys.executable).resolve().parent / "protection-bootstrap.ps1"
-    else:
-        candidate = Path(__file__).resolve().parents[1] / "scripts" / "protection-bootstrap.ps1"
-    if not candidate.is_file():
-        raise FileNotFoundError(f"Protection bootstrap script is missing: {candidate}")
-    return candidate
+    return _runtime_file("protection-bootstrap.ps1", "scripts")
 
 
 def _bootstrap_manifest_path() -> Path:
-    if getattr(sys, "frozen", False):
-        candidate = Path(sys.executable).resolve().parent / "clamav-windows.json"
-    else:
-        candidate = Path(__file__).resolve().parents[1] / "release" / "clamav-windows.json"
-    if not candidate.is_file():
-        raise FileNotFoundError(f"ClamAV bootstrap manifest is missing: {candidate}")
-    return candidate
+    return _runtime_file("clamav-windows.json", "release")
 
 
 def run_protection_bootstrap(*, timeout: float = 900.0) -> dict:
