@@ -1,7 +1,5 @@
 import hashlib
 import json
-import importlib.util
-import os
 import time
 from pathlib import Path
 
@@ -9,6 +7,7 @@ import pytest
 
 from antios.antivirus_i18n import MESSAGES
 from antios.i18n import SUPPORTED_LANGUAGES, Translator
+from tk_support import isolated_tk_test, native_tk_display_available
 
 
 def test_antivirus_catalog_is_complete_and_formats_in_every_locale():
@@ -21,23 +20,9 @@ def test_antivirus_catalog_is_complete_and_formats_in_every_locale():
         assert "sample.txt" in tr.t("av.restore_confirm", path="sample.txt")
 
 
-def _native_tk_display_available():
-    if importlib.util.find_spec("tkinter") is None:
-        return False
-    if os.name != "nt" and not os.environ.get("DISPLAY"):
-        return False
-    try:
-        import tkinter as tk
-        interpreter = tk.Tcl()
-        interpreter.eval("package require Tk")
-        interpreter.eval("destroy .")
-        return True
-    except tk.TclError:
-        return False
-
-
-@pytest.mark.skipif(not _native_tk_display_available(),
+@pytest.mark.skipif(not native_tk_display_available(),
                    reason="Native Tk display unavailable")
+@isolated_tk_test
 def test_real_tk_page_scan_and_theme_rebuild_share_job_results(tmp_path, monkeypatch):
     import tkinter as tk
     import antios.antivirus_ui as antivirus_ui

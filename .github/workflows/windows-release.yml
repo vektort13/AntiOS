@@ -19,6 +19,7 @@ on:
       - "setup.py"
       - "MANIFEST.in"
       - ".github/workflows/windows-release.yml"
+      - ".github/workflows/python-v2.yml"
   push:
     branches: ["master"]
 
@@ -33,6 +34,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/python-v2.yml
+
   build-windows:
     runs-on: windows-latest
 
@@ -633,7 +639,7 @@ jobs:
 
   publish-release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [build-windows, build-linux]
+    needs: [validate, build-windows, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write

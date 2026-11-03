@@ -1,8 +1,7 @@
-import importlib.util
-import os
 import time
 
 import pytest
+from tk_support import isolated_tk_test, native_tk_display_available
 
 from antios.guard_state import GuardState, read_incident_history
 from antios.incident_viewer import (
@@ -169,20 +168,17 @@ def test_format_incident_when_uses_journal_wall_clock():
 
 
 @pytest.mark.skipif(
-    importlib.util.find_spec("tkinter") is None or
-    (os.name != "nt" and not os.environ.get("DISPLAY")),
+    not native_tk_display_available(),
     reason="Native Tk display unavailable",
 )
+@isolated_tk_test
 def test_real_tk_incident_viewer_renders_history_tree_and_details():
     import tkinter as tk
     from tkinter import ttk
 
     from antios.antivirus_i18n import MESSAGES
 
-    try:
-        root = tk.Tk()
-    except tk.TclError as exc:
-        pytest.skip(f"Native Tk runtime unavailable: {exc}")
+    root = tk.Tk()
     root.withdraw()
 
     class App:

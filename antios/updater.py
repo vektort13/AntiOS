@@ -120,6 +120,7 @@ def _authenticode(path: Path) -> dict:
     escaped = str(path).replace("'", "''")
     command = (
         "$ErrorActionPreference='Stop';"
+        "[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false);"
         "Import-Module Microsoft.PowerShell.Security -ErrorAction Stop;"
         f"$p='{escaped}';"
         "$s=Get-AuthenticodeSignature -LiteralPath $p;"
@@ -134,6 +135,8 @@ def _authenticode(path: Path) -> dict:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=20,
         **hidden_process_kwargs(),
     )

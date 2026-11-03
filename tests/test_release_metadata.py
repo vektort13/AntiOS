@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 import tomllib
 
@@ -45,16 +46,30 @@ def test_license_and_notice_are_present():
 def test_windows_and_store_versions_track_package_alpha():
     _base, alpha = __version__.split("a")
     expected_numeric = f"2.0.{int(alpha)}.0"
-    expected_tuple = f"(2, 0, {int(alpha)}, 0)"
+    expected_tuple = (2, 0, int(alpha), 0)
 
     for path in (
         "release/windows-cli-version.txt",
         "release/windows-gui-version.txt",
         "release/windows-guard-version.txt",
     ):
-        text = Path(path).read_text(encoding="utf-8")
-        assert expected_tuple in text
-        assert __version__ in text
+        tree = ast.parse(Path(path).read_text(encoding="utf-8"), filename=path)
+        calls = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        ]
+        fixed_info = [node for node in calls if node.func.id == "FixedFileInfo"]
+        assert len(fixed_info) == 1, path
+        fixed_fields = {keyword.arg: keyword.value for keyword in fixed_info[0].keywords}
+        for name in ("filevers", "prodvers"):
+            assert ast.literal_eval(fixed_fields[name]) == expected_tuple, (path, name)
+
+        string_fields = {
+            ast.literal_eval(node.args[0]): ast.literal_eval(node.args[1])
+            for node in calls if node.func.id == "StringStruct"
+        }
+        for name in ("FileVersion", "ProductVersion"):
+            assert string_fields[name] == __version__, (path, name)
 
     installer = Path("installer/AntiOS.nsi").read_text(encoding="utf-8")
     assert f'!define APP_VERSION "{__version__}"' in installer

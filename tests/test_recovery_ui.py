@@ -1,28 +1,13 @@
-import importlib.util
-import os
 import time
 
 import pytest
 
 from antios import recovery
-
-def _native_tk_display_available():
-    if importlib.util.find_spec("tkinter") is None:
-        return False
-    if os.name != "nt" and not os.environ.get("DISPLAY"):
-        return False
-    try:
-        import tkinter as tk
-        interpreter = tk.Tcl()
-        interpreter.eval("package require Tk")
-        interpreter.eval("destroy .")
-        return True
-    except tk.TclError:
-        return False
+from tk_support import isolated_tk_test, native_tk_display_available
 
 
 pytestmark = pytest.mark.skipif(
-    not _native_tk_display_available(),
+    not native_tk_display_available(),
     reason="Native Tk display unavailable",
 )
 
@@ -51,6 +36,7 @@ def drain(root, window):
 
 
 @pytest.mark.parametrize("language", ["ru", "en"])
+@isolated_tk_test
 def test_real_tk_recovery_create_check_export_and_reopen(tmp_path, monkeypatch, language):
     import tkinter as tk
     from tkinter import filedialog
@@ -98,6 +84,7 @@ def test_real_tk_recovery_create_check_export_and_reopen(tmp_path, monkeypatch, 
         root.destroy()
 
 
+@isolated_tk_test
 def test_closing_busy_window_cancels_worker_without_tk_thread_calls(tmp_path):
     import tkinter as tk
     from antios.dashboard import Dashboard, THEME
@@ -129,6 +116,7 @@ def test_closing_busy_window_cancels_worker_without_tk_thread_calls(tmp_path):
         root.destroy()
 
 
+@isolated_tk_test
 def test_selected_recovery_uses_listed_archive_and_rejects_replacement(tmp_path, monkeypatch):
     import tkinter as tk
     from tkinter import filedialog

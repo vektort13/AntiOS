@@ -4,6 +4,7 @@ import argparse
 import ctypes
 import json
 import os
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -748,7 +749,7 @@ def main(argv: list[str] | None = None) -> int:
                 ))
             return 0
 
-    except (OSError, RuntimeError, PermissionError, ValueError) as exc:
+    except (OSError, RuntimeError, PermissionError, ValueError, sqlite3.Error) as exc:
         from .diagnostics import classify_error, record_event
         operation = str(getattr(args, "command", "cli") or "cli")
         component = (

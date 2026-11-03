@@ -32,7 +32,7 @@ def test_forced_stop_reaps_blocked_child_and_keeps_checkpoint(tmp_path, monkeypa
                       f' f.write({json.dumps(["checkpoint", checkpoint]) + chr(10)!r}); f.flush()\n'
                       ' f.write("[\\\"checkpoint\\\", {"); f.flush()\n'
                       f' Path({str(started)!r}).touch()\n'
-                      ' time.sleep(60)\n')
+                      ' time.sleep(60)\n', encoding='utf-8')
     monkeypatch.setattr(scan_process, 'worker_command', lambda request, events:
                         [sys.executable, str(script), str(events)])
     processes = []

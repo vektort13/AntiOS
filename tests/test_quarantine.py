@@ -3,12 +3,24 @@ import hmac
 import json
 import os
 import zlib
+import sys
 
 import pytest
 
 from antios.antivirus import scan_files
 from antios.quarantine import DPAPIProtector, Quarantine
 from test_antivirus import Provider
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows SID command")
+def test_sid_lookup_handles_oem_username_independently_of_python_encoding(monkeypatch):
+    import antios.quarantine as module
+    run = module.subprocess.run
+    payload = '"машина\\пользователь","S-1-5-21-123-456-789-1001"\r\n'.encode("cp866")
+    def fake_whoami(command, **kwargs):
+        return run([sys.executable, "-c", f"import sys; sys.stdout.buffer.write({payload!r})"], **kwargs)
+    monkeypatch.setattr(module.subprocess, "run", fake_whoami)
+    assert module._current_windows_sid() == "S-1-5-21-123-456-789-1001"
 
 
 class AuthenticatedTestProtector:

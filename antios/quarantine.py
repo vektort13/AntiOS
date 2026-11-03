@@ -85,6 +85,10 @@ def _current_windows_sid() -> str:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        # Only the ASCII SID is consumed. Native whoami uses the OEM code
+        # page, independently of Python UTF-8 mode and its locale default.
+        encoding="ascii",
+        errors="replace",
         timeout=5,
         **hidden_process_kwargs(),
     )
@@ -113,6 +117,8 @@ def _harden_windows_directory(path: Path) -> None:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="oem",
+        errors="replace",
         timeout=30,
         **hidden_process_kwargs(),
     )

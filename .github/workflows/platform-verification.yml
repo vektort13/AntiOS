@@ -1,0 +1,75 @@
+name: AntiOS remaining platform tests
+
+on:
+  push:
+    branches: ["test/platform-59-*"]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "antios/**"
+      - "native/**"
+      - "tests/**"
+      - "release/platform-test-cases.json"
+      - "scripts/run-platform-tests.py"
+      - ".github/workflows/platform-verification.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: antios-platform-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install compiler, real ClamD and display dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc clamav-daemon python3-tk xvfb xauth
+          python -m pip install pytest -e .
+      - name: Run all 51 Linux cases with zero skips required
+        env:
+          ANTIOS_REQUIRE_NATIVE: "1"
+          ANTIOS_REQUIRE_CLAMD: "1"
+          ANTIOS_TEST_CLAMD: /usr/sbin/clamd
+        run: xvfb-run -a python scripts/run-platform-tests.py linux
+      - name: Retain test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AntiOS-platform-linux-results
+          path: build/platform-test-results/*.xml
+          if-no-files-found: warn
+
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: python -m pip install pytest -e .
+      - name: Compile native client without installing a service or driver
+        shell: pwsh
+        run: ./native/windows/build.ps1 -Target Service
+      - name: Run all eight Windows cases with zero skips required
+        env:
+          ANTIOS_NATIVE_EXE: build/native/windows/AntiOS-Service.exe
+          ANTIOS_REQUIRE_NATIVE_WINDOWS: "1"
+        run: python scripts/run-platform-tests.py windows
+      - name: Retain test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AntiOS-platform-windows-results
+          path: build/platform-test-results/*.xml
+          if-no-files-found: warn

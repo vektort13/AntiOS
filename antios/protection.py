@@ -39,9 +39,10 @@ def _managed_runtime_status() -> dict:
         process = subprocess.run(
             [str(schtasks), "/Query", "/TN", "AntiOS ClamAV Signature Update", "/FO", "LIST"],
             stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
+            # Only the exit code is needed; do not decode localized OEM text
+            # with Python's potentially unrelated default encoding.
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             timeout=5,
             **hidden_process_kwargs(),
         )

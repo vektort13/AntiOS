@@ -1,4 +1,3 @@
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -8,6 +7,7 @@ from zipfile import ZipFile
 import pytest
 
 from antios import diagnostics
+from tk_support import isolated_tk_test, native_tk_display_available
 
 
 def test_engine_authenticode_error_is_actionable():
@@ -154,9 +154,9 @@ def test_antivirus_panel_error_records_classified_event(monkeypatch):
     assert panel.last_error_label.props["fg"] == "red"
 
 
-@pytest.mark.skipif(importlib.util.find_spec("tkinter") is None or
-                    (os.name != "nt" and not os.environ.get("DISPLAY")),
+@pytest.mark.skipif(not native_tk_display_available(),
                     reason="Native Tk display unavailable")
+@isolated_tk_test
 def test_real_diagnostics_window_filters_inspects_and_closes(monkeypatch):
     import tkinter as tk
     from tkinter import ttk
@@ -170,16 +170,7 @@ def test_real_diagnostics_window_filters_inspects_and_closes(monkeypatch):
                                  code="GUARD_STATE_CHANGED", directory=Path(os.devnull) / "invalid"),
     ]
     monkeypatch.setattr(diagnostics_ui, "recent_events", lambda **_kwargs: events)
-    try:
-        root = tk.Tk()
-    except tk.TclError as exc:
-        # Some hosted Windows Python installs intermittently cannot read
-        # their own Tcl init.tcl before any application/UI code is executed.
-        # This is an unavailable display runtime, not a diagnostics failure.
-        # Keep all other Tk failures visible and do not bypass any assertions.
-        if "init.tcl" in str(exc):
-            pytest.skip("Hosted runner has an unusable Tcl/Tk runtime")
-        raise
+    root = tk.Tk()
     root.withdraw()
     app = SimpleNamespace(root=root, language="ru", _diagnostics_window=None)
     try:

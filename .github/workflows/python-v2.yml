@@ -5,6 +5,7 @@ on:
     branches: ["master"]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: antios-v2-${{ github.workflow }}-${{ github.ref }}

@@ -52,21 +52,26 @@ class StorageJournal:
         if parent.is_symlink() or self.path.is_symlink():
             raise ValueError("Journal path cannot be a symlink")
         self.db = sqlite3.connect(self.path, timeout=2)
-        self.db.execute("""
-            CREATE TABLE IF NOT EXISTS samples(
-                root TEXT NOT NULL, day INTEGER NOT NULL, bytes INTEGER NOT NULL,
-                files INTEGER NOT NULL, PRIMARY KEY(root, day))
-        """)
-        self.db.execute("""
-            CREATE TABLE IF NOT EXISTS preferences(
-                category TEXT PRIMARY KEY, choice TEXT NOT NULL,
-                confirmed_deletions INTEGER NOT NULL DEFAULT 0)
-        """)
-        self.db.execute("""
-            CREATE TABLE IF NOT EXISTS settings(
-                name TEXT PRIMARY KEY, value TEXT NOT NULL)
-        """)
-        self.db.commit()
+        try:
+            self.db.execute("""
+                CREATE TABLE IF NOT EXISTS samples(
+                    root TEXT NOT NULL, day INTEGER NOT NULL, bytes INTEGER NOT NULL,
+                    files INTEGER NOT NULL, PRIMARY KEY(root, day))
+            """)
+            self.db.execute("""
+                CREATE TABLE IF NOT EXISTS preferences(
+                    category TEXT PRIMARY KEY, choice TEXT NOT NULL,
+                    confirmed_deletions INTEGER NOT NULL DEFAULT 0)
+            """)
+            self.db.execute("""
+                CREATE TABLE IF NOT EXISTS settings(
+                    name TEXT PRIMARY KEY, value TEXT NOT NULL)
+            """)
+            self.db.commit()
+        except sqlite3.Error:
+            # __exit__ is not called when construction fails.
+            self.db.close()
+            raise
 
     def history_enabled(self) -> bool:
         row = self.db.execute(
@@ -149,6 +154,11 @@ class StorageJournal:
                     (category,),
                 )
 
+    def reset_preferences(self) -> None:
+        """Forget explicit choices and learned counts without erasing scan history."""
+        with self.db:
+            self.db.execute("DELETE FROM preferences")
+
     def preferences(self) -> dict[str, dict[str, Any]]:
         rows = self.db.execute(
             "SELECT category, choice, confirmed_deletions FROM preferences"
@@ -205,22 +215,30 @@ def copy_evidence(scan: dict[str, Any], selected: list[str] | None = None) -> di
 
     A hard link is another name for the SAME physical content, not an
     independent surviving copy. Missing matches are not proof of uniqueness.
+    When a deletion selection is supplied, only unselected names can provide
+    surviving-copy evidence; selected duplicates cannot vouch for each other.
     """
     snapshots = scan.get("candidate_snapshots", {})
-    groups: dict[str, tuple[int, int]] = {}
+    excluded = {os.path.normcase(str(path)) for path in selected or []}
+    groups: dict[str, tuple[int, bool]] = {}
     for group in scan.get("duplicates", []):
-        identities: set[tuple[int, int]] = set()
+        identities: dict[str, tuple[int, int]] = {}
         for path in group["paths"]:
             snap = snapshots.get(str(path), {})
             if "device" in snap and "inode" in snap:
-                identities.add((int(snap["device"]), int(snap["inode"])))
+                identities[str(path)] = (int(snap["device"]), int(snap["inode"]))
+        independent = set(identities.values())
+        surviving = {identity for path, identity in identities.items()
+                     if os.path.normcase(path) not in excluded}
         for path in group["paths"]:
-            groups[str(path)] = (len(identities), len(group["paths"]))
+            identity = identities.get(str(path))
+            has_other = identity is not None and len(surviving) > int(identity in surviving)
+            groups[str(path)] = (len(independent), has_other)
     paths = selected if selected is not None else list(snapshots)
     output: dict[str, dict[str, Any]] = {}
     for path in paths:
         copies = groups.get(str(path))
-        if copies and copies[0] > 1:
+        if copies and copies[1]:
             output[str(path)] = {
                 "status": "verified-other-file-in-scan",
                 "independent_files_in_group": copies[0],
@@ -265,7 +283,8 @@ def insights_for_scan(scan: dict[str, Any], *, journal_path: str | Path | None =
         "recommendations": [],
         "preferences": {},
     }
-    if scan.get("cancelled") or scan.get("limit_reached"):
+    if (scan.get("cancelled") or scan.get("limit_reached") or scan.get("errors")
+            or scan.get("summary", {}).get("errors", 0)):
         result["history"] = {
             "forecast": "unavailable",
             "reason": "cancelled-or-incomplete-scan",

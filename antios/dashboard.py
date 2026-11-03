@@ -5,6 +5,7 @@ import ctypes
 import json
 import os
 import queue
+import sqlite3
 import sys
 import threading
 import webbrowser
@@ -2165,7 +2166,7 @@ class Dashboard:
             if self.storage_result:
                 self.storage_result["intelligence"] = insights_for_scan(self.storage_result)
                 self._render_cleanup_result(self.storage_result)
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, sqlite3.Error) as exc:
             messagebox.showerror("MemoryMap", str(exc))
 
     def _clear_cleanup_history(self) -> None:
@@ -2190,7 +2191,7 @@ class Dashboard:
                       if self.language == "ru" else
                       "History erased; the next scan may create a new snapshot.")
             )
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, sqlite3.Error) as exc:
             messagebox.showerror("MemoryMap", str(exc))
 
     def _show_cleanup_survival(self) -> None:
@@ -2228,19 +2229,18 @@ class Dashboard:
                     journal.set_preference(category, choice)
             self.storage_result["intelligence"] = insights_for_scan(self.storage_result)
             self._render_cleanup_result(self.storage_result)
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, sqlite3.Error) as exc:
             messagebox.showerror("CleanupDNA", str(exc))
 
     def _cleanup_reset_preferences(self) -> None:
         from tkinter import messagebox
         try:
             with StorageJournal() as journal:
-                for category in ("duplicate", "old", "archive", "empty"):
-                    journal.set_preference(category, "normal")
+                journal.reset_preferences()
             if self.storage_result:
                 self.storage_result["intelligence"] = insights_for_scan(self.storage_result)
                 self._render_cleanup_result(self.storage_result)
-        except (OSError, ValueError) as exc:
+        except (OSError, ValueError, sqlite3.Error) as exc:
             messagebox.showerror("CleanupDNA", str(exc))
 
     def _proof_cleanup_backup(self) -> None:
@@ -2389,9 +2389,13 @@ class Dashboard:
                              for v in evidence.values())
             if unverified and not messagebox.askyesno(
                 "AntiOS LastCopy",
-                (f"{unverified} selected files have no independently verified copy "
-                 "inside the scanned folder. Other backups were not checked. "
-                 "Continue to permanent deletion?"), icon="warning",
+                ((f"Для {unverified} выбранных файлов не подтверждена независимая копия "
+                  "среди остающихся файлов в проверенной папке. Другие резервные копии "
+                  "не проверялись. Продолжить безвозвратное удаление?")
+                 if self.language == "ru" else
+                 (f"{unverified} selected files have no independently verified copy "
+                  "outside this deletion selection in the scanned folder. Other backups "
+                  "were not checked. Continue to permanent deletion?")), icon="warning",
             ):
                 return
             if not messagebox.askyesno(
@@ -2458,7 +2462,7 @@ class Dashboard:
                 try:
                     with StorageJournal() as journal:
                         journal.confirmed_cleanup(chosen_kinds)
-                except (OSError, ValueError):
+                except (OSError, ValueError, sqlite3.Error):
                     pass
         freed = format_bytes(result.get("bytes_freed", 0))
 

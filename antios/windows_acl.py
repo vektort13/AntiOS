@@ -31,6 +31,7 @@ def assert_protected_install(executable: Path, program_files: Path) -> None:
     encoded_exe = base64.b64encode(str(exe).encode("utf-8")).decode("ascii")
     encoded_root = base64.b64encode(str(root).encode("utf-8")).decode("ascii")
     script = r"""$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $exe = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('EXE_PATH'))
 $root = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('ROOT_PATH'))
 $allowed = @(
@@ -81,6 +82,8 @@ while ($true) {
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=25,
         **hidden_process_kwargs(),
     )
