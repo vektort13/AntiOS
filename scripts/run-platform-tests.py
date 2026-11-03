@@ -2,6 +2,8 @@
 
 No production service/driver is installed. Every selected case must pass;
 missing, skipped or duplicated cases make this verification fail.
+Use pytest 9.1.1 to reproduce the recorded parameter IDs (newer pytest
+versions may abbreviate long automatically generated parameter names).
 """
 from __future__ import annotations
 
