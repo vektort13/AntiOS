@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import ctypes
 from ctypes import wintypes
+import hashlib
 import json
 import ntpath
 import os
@@ -39,6 +40,9 @@ from .security_sensors import (
 )
 from .windows_behavior import WindowsProcessSampler
 from .windows_process import hidden_process_kwargs, system_executable, windows_powershell_env
+from .windows_process_metadata import (
+    ProcessMetadata, WindowsProcessMetadataProvider, integrity_name, read_process_identity,
+)
 
 
 PROCESS_QUERY_INFORMATION = 0x0400
@@ -273,8 +277,7 @@ class WindowsProcessProvider:
         unresolved = 0
         creation_by_pid: dict[int, int] = {}
         for item in ordered:
-            path = self.sampler._path(item.pid)
-            creation = self.sampler._creation_time(item.pid)
+            path, creation = read_process_identity(self.sampler.kernel32, item.pid)
             if not path:
                 unresolved += 1
             creation_by_pid[item.pid] = creation
@@ -293,7 +296,10 @@ class WindowsProcessProvider:
                 image=item.image,
                 path=item.path,
                 creation_time=item.creation_time,
-                parent_creation_time=creation_by_pid.get(item.ppid, 0),
+                parent_creation_time=(
+                    creation_by_pid[item.ppid]
+                    if 0 < creation_by_pid.get(item.ppid, 0) <= item.creation_time else 0
+                ),
             )
             for item in provisional
         )
@@ -754,9 +760,7 @@ $out | ConvertTo-Json -Compress
             issues.extend(more_issues)
             truncated = truncated or more_truncated
 
-        # We cover the high-value user COM override surface, not every machine
-        # COM registration or every vendor-specific persistence extension.
-        uncovered = ("machine-wide-com-hijack-analysis",)
+        uncovered = ("machine-wide-com-hijack-analysis", "wmi-event-filters-and-bindings")
         return PersistenceSnapshot(
             tuple(entries),
             tuple(issues[:128]),
@@ -912,7 +916,7 @@ class WindowsProcessSensor:
         Acquisition.SNAPSHOT,
         minimum_privilege=Privilege.USER,
         capability=CapabilityState.AVAILABLE,
-        version=1,
+        version=2,
         experimental=False,
     )
 
@@ -921,8 +925,10 @@ class WindowsProcessSensor:
         provider: ProcessProvider,
         *,
         user_writable_roots: Iterable[str] | None = None,
+        metadata_provider: WindowsProcessMetadataProvider | None = None,
     ):
         self.provider = provider
+        self.metadata_provider = metadata_provider
         self.user_writable_roots = tuple(
             user_writable_roots
             if user_writable_roots is not None
@@ -930,10 +936,44 @@ class WindowsProcessSensor:
         )
 
     def collect(self, context: ScanContext) -> SensorReport:
+        deadline = time.monotonic() + context.budget.max_seconds
+        budget = BudgetGuard(context.budget)
         snapshot = self.provider.snapshot(context.budget.max_items)
-        evidence = []
+        processes = []
         for process in snapshot.processes:
+            if not budget.take():
+                break
+            processes.append(process)
+
+        metadata: dict[str, ProcessMetadata] = {}
+        signatures: dict[str, tuple[str, str]] = {}
+        if self.metadata_provider is not None:
+            prioritized = sorted(
+                (process for process in processes if process.creation_time),
+                key=lambda process: not _under(process.path, self.user_writable_roots),
+            )
+            # Image verification has its own timeout and is bounded by the
+            # shared byte budget. Native module walks use the remaining time.
+            signatures = self.metadata_provider.image_signatures(
+                (process.path for process in prioritized if process.path), budget, deadline,
+            )
+            for process in prioritized[:256]:
+                if budget.expired():
+                    break
+                metadata[process.subject] = self.metadata_provider.inspect(
+                    process.pid, process.creation_time, process.path, deadline,
+                )
+
+        evidence = []
+        integrity_observed = module_lists = module_samples = signatures_observed = 0
+        for process in processes:
             user_writable = _under(process.path, self.user_writable_roots)
+            info = metadata.get(process.subject, ProcessMetadata())
+            status, signer = signatures.get(ntpath.normcase(process.path), ("Unavailable", ""))
+            integrity_observed += info.integrity_rid is not None
+            module_lists += info.module_coverage == "listed"
+            module_samples += bool(info.modules) and info.module_coverage != "listed"
+            signatures_observed += status not in {"Unavailable", "UnknownError"}
             evidence.append(sensor_evidence(
                 self.descriptor,
                 context,
@@ -965,15 +1005,26 @@ class WindowsProcessSensor:
                     "image": process.image,
                     "path": process.path,
                     "user_writable_execution": user_writable,
+                    "integrity_level": integrity_name(info.integrity_rid),
+                    "integrity_rid": info.integrity_rid,
+                    "loaded_module_names": info.modules,
+                    "module_inventory": info.module_coverage,
+                    "image_module_observed": info.image_module_observed,
+                    "image_signature_status": status,
+                    "image_signer": signer,
                 },
             ))
 
-        reasons = [
-            "baseline process inventory does not yet verify signer, integrity "
-            "level or loaded-module integrity"
-        ]
-        if snapshot.truncated:
-            reasons.append("process inventory reached item budget")
+        reasons = ["Loaded module integrity and mapped image integrity are outside this inventory"]
+        if self.metadata_provider is None:
+            reasons.append("signer, token integrity and module metadata provider is unavailable")
+        else:
+            reasons.append(
+                f"Observed {integrity_observed} token integrity level(s), {module_lists} loader module list(s), "
+                f"{module_samples} partial module sample(s), and {signatures_observed} on-disk image signature result(s)"
+            )
+        if snapshot.truncated or len(processes) < len(snapshot.processes) or budget.expired():
+            reasons.append("process inventory reached time or item budget")
         if snapshot.unresolved_paths:
             reasons.append(
                 f"{snapshot.unresolved_paths} process image path(s) were inaccessible"
@@ -982,8 +1033,9 @@ class WindowsProcessSensor:
             self.descriptor,
             Coverage.PARTIAL,
             tuple(evidence),
-            reason="; ".join(reasons),
-            inspected_items=len(snapshot.processes),
+            reason=". ".join(reasons),
+            inspected_items=len(processes),
+            inspected_bytes=budget.bytes,
             skipped_items=snapshot.unresolved_paths,
         )
 
@@ -1062,10 +1114,16 @@ class WindowsPersistenceSensor:
                 "embedded_wmi_script": embedded_wmi_script,
             }
             attrs.update(dict(entry.metadata))
+            subject = f"persistence:{entry.kind}:{entry.location}:{entry.name}"
+            group = subject
+            if len(group) > 128:
+                group = "persistence:" + hashlib.sha256(
+                    group.encode("utf-8", errors="surrogatepass")
+                ).hexdigest()
             evidence.append(sensor_evidence(
                 self.descriptor,
                 context,
-                subject=f"persistence:{entry.kind}:{entry.location}:{entry.name}",
+                subject=subject if len(subject) <= 32768 else group,
                 kind="persistence",
                 rule_id=(
                     "persistence.review"
@@ -1080,11 +1138,7 @@ class WindowsPersistenceSensor:
                 maliciousness=maliciousness,
                 confidence=confidence,
                 severity=severity,
-                correlation_group=(
-                    f"persistence:{entry.kind}:{entry.location}:{entry.name}"
-                    if suspicious
-                    else ""
-                ),
+                correlation_group=group if suspicious else "",
                 attributes=attrs,
             ))
 
@@ -1253,7 +1307,9 @@ def build_windows_registry(*, evidence_bus=None) -> SensorRegistry:
     platform_provider = WindowsPlatformProvider()
 
     replacements = {
-        Surface.PROCESS: WindowsProcessSensor(process_provider),
+        Surface.PROCESS: WindowsProcessSensor(
+            process_provider, metadata_provider=WindowsProcessMetadataProvider(process_provider.sampler.kernel32),
+        ),
         Surface.PERSISTENCE: WindowsPersistenceSensor(persistence_provider),
         Surface.RAM: WindowsMemorySensor(process_provider, memory_provider),
         Surface.NETWORK: WindowsNetworkSensor(WindowsProcessProvider(cache_seconds=0)),

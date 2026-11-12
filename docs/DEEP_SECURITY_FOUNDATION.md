@@ -6,7 +6,7 @@ AntiOS uses read-only or bounded sensors to add system context to ordinary file 
 
 | Surface | Current status | Examples |
 | --- | --- | --- |
-| Process | Partial baseline | process identity, parent, image path |
+| Process | Partial baseline | process identity, parent, path, token integrity, loader module inventory and on-disk image Authenticode |
 | Persistence | Partial baseline | common autoruns, services, tasks, WMI and COM persistence |
 | Process memory | Partial baseline | executable private regions and bounded header probes |
 | Loaded drivers | Partial baseline | loaded-driver inventory, Authenticode, exact blocklist and hash checks |
@@ -36,6 +36,8 @@ Security-sensor evidence is review and correlation input. Current policy reserve
 Resident Guard runs supported sensors in a bounded background worker so security collection does not block ordinary file monitoring and scanning.
 
 Raw process memory is not persisted as normal evidence. Persistence command arguments are used only as needed for local classification and are not stored as ordinary evidence records.
+
+Process reports distinguish a full loader module list from a bounded sample. Image signing status describes the on-disk file. Mapped-image verification, loaded-module integrity, machine-wide COM registration and complete WMI filter/binding coverage remain open.
 
 ## Inspect local sensor coverage
 

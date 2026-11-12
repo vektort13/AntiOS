@@ -4,6 +4,7 @@ The tests use fake providers so the detection policy is portable and determinist
 Native Win32 API acceptance is covered by the Windows CI smoke tests.
 """
 import os
+import time
 
 import pytest
 
@@ -13,6 +14,7 @@ from antios.security_sensors import (
     BudgetGuard, Coverage, ScanBudget, ScanContext, SensorReport, Surface,
     runtime_registry, sensor_evidence,
 )
+from antios.windows_process_metadata import ProcessMetadata, WindowsProcessMetadataProvider
 from antios.windows_security_sensors import (
     MEM_COMMIT,
     MEM_IMAGE,
@@ -116,6 +118,49 @@ def test_process_sensor_reports_inaccessible_paths_as_partial_not_clean():
     assert "inaccessible" in report.reason
 
 
+def test_process_sensor_retains_metadata_and_reports_missing_evidence():
+    image_path = r"C:\Program Files\Example\agent.exe"
+
+    class Metadata:
+        def image_signatures(self, paths, budget, deadline):
+            assert tuple(paths) == (image_path,)
+            assert budget.take(items=0, byte_count=64)
+            return {image_path.lower(): ("Valid", "Example Publisher")}
+
+        def inspect(self, pid, creation_time, path, deadline):
+            assert (pid, creation_time, path) == (42, 12345, image_path)
+            return ProcessMetadata(0x2000, ("agent.exe", "kernel32.dll"), "budget", True)
+
+    sensor = WindowsProcessSensor(FakeProcesses([
+        ProcessRecord(42, 4, "agent.exe", image_path, creation_time=12345),
+        ProcessRecord(43, 4, "unknown.exe", ""),
+    ]), metadata_provider=Metadata())
+    report = sensor.collect(ScanContext(budget=ScanBudget(max_bytes=64)))
+    observed, unavailable = report.evidence
+    assert report.coverage is Coverage.PARTIAL and report.inspected_bytes == 64
+    assert observed.attributes["integrity_level"] == "medium"
+    assert observed.attributes["loaded_module_names"] == ("agent.exe", "kernel32.dll")
+    assert observed.attributes["module_inventory"] == "budget"
+    assert observed.attributes["image_module_observed"]
+    assert observed.attributes["image_signature_status"] == "Valid"
+    assert observed.attributes["image_signer"] == "Example Publisher"
+    assert unavailable.attributes["integrity_level"] == "unavailable"
+    assert unavailable.attributes["image_signature_status"] == "Unavailable"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="native Windows process metadata APIs")
+def test_native_process_metadata_requires_a_stable_process_instance():
+    processes = WindowsProcessProvider(cache_seconds=0)
+    own = next(process for process in processes.snapshot(20_000).processes if process.pid == os.getpid())
+    provider = WindowsProcessMetadataProvider(processes.sampler.kernel32)
+    deadline = time.monotonic() + 5
+    observed = provider.inspect(own.pid, own.creation_time, own.path, deadline)
+    assert observed.integrity_rid is not None
+    assert observed.modules
+    assert observed.image_module_observed
+    assert provider.inspect(own.pid, own.creation_time + 1, own.path, deadline) == ProcessMetadata()
+
+
 def test_persistence_sensor_inventories_normal_entry_without_calling_it_malware():
     sensor = WindowsPersistenceSensor(
         FakePersistence([
@@ -158,6 +203,22 @@ def test_persistence_sensor_flags_user_writable_autorun_for_review_only():
     assert item.attributes["user_writable_target"] is True
     assert 0 < item.risk_score < 40
     assert item.attributes["persistence_kind"] == "run-key"
+
+
+def test_persistence_long_com_entry_keeps_other_observations():
+    clsid = "{01234567-89AB-CDEF-0123-456789ABCDEF}"
+    location = rf"HKCU\Software\Classes\CLSID\{clsid}\InprocServer32"
+    provider = FakePersistence([
+        PersistenceEntry("com-override", location, clsid, r"C:\Users\alice\example.dll"),
+        PersistenceEntry("run-key", "HKCU", "other", r"C:\Windows\example.exe"),
+    ])
+    sensor = WindowsPersistenceSensor(provider, user_writable_roots=(r"C:\Users\alice",))
+    report = sensor.collect(ScanContext())
+    assert len(report.evidence) == 2
+    com, _ = report.evidence
+    assert 0 < len(com.correlation_group) <= 128
+    assert com.correlation_group == sensor.collect(ScanContext()).evidence[0].correlation_group
+    assert com.attributes["location"] == location
 
 
 def test_user_writable_auto_service_is_stronger_than_common_user_autorun():
