@@ -101,20 +101,23 @@ class DetectionSignature:
             raise ValueError("Detection signature same_subject must be boolean")
 
     def match(self, evidence: tuple[Evidence, ...]) -> tuple[Evidence, ...]:
-        matched: list[Evidence] = []
-        subject: str | None = None
+        by_pattern: list[dict[str, Evidence]] = []
         for pattern in self.patterns:
-            candidate = next((
-                item for item in evidence
-                if pattern.matches(item)
-                and (not self.same_subject or subject is None or item.subject == subject)
-            ), None)
-            if candidate is None:
+            candidates: dict[str, Evidence] = {}
+            for item in evidence:
+                if pattern.matches(item):
+                    candidates.setdefault(item.subject, item)
+                    if not self.same_subject:
+                        break
+            if not candidates:
                 return ()
-            if self.same_subject and subject is None:
-                subject = candidate.subject
-            matched.append(candidate)
-        return tuple(matched)
+            by_pattern.append(candidates)
+        if not self.same_subject:
+            return tuple(next(iter(items.values())) for items in by_pattern)
+        for subject in by_pattern[0]:
+            if all(subject in items for items in by_pattern[1:]):
+                return tuple(items[subject] for items in by_pattern)
+        return ()
 
 
 class DetectionSignatureEngine:
@@ -272,6 +275,21 @@ DEFAULT_DETECTION_SIGNATURES = DetectionSignatureEngine((
             )),
         ),
         severity=95, maliciousness=.98, confidence=.92,
+    ),
+    DetectionSignature(
+        "network.private-pe-public-peer",
+        "Private executable PE and established public TCP peer on the same process",
+        "in-memory-execution",
+        (
+            SignalPattern(kinds=frozenset({"memory"}), constraints=(
+                _eq("private_executable", True), _eq("embedded_pe", True),
+                _gte("creation_time", 1),
+            )),
+            SignalPattern(kinds=frozenset({"network"}), constraints=(
+                _gte("established_public", 1), _gte("creation_time", 1),
+            )),
+        ),
+        severity=90, maliciousness=.95, confidence=.90,
     ),
     DetectionSignature(
         "memory.private-thread-start",

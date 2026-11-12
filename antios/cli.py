@@ -44,6 +44,9 @@ from .system_name import WindowsComputerNameBackend
 from .terminal import color_enabled
 
 
+_INSPECTABLE_SENSORS = ("browser", "network", "gpu", "device_firmware")
+
+
 def _print_json(data: object) -> None:
     print(json.dumps(data, indent=2, ensure_ascii=False))
 
@@ -110,6 +113,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Show read-only coexistence state (Defender on Windows; Kaspersky/Dr.Web on Linux).",
     )
     coexist_cmd.add_argument("--json", action="store_true")
+
+    sensors = sub.add_parser("sensors", help="Inspect local browser, TCP and hardware sensor coverage.")
+    sensors.add_argument("--surface", choices=_INSPECTABLE_SENSORS, action="append")
+    sensors.add_argument("--json", action="store_true")
 
     version_cmd = sub.add_parser("version", help="Show AntiOS and Python versions.")
     version_cmd.add_argument("--json", action="store_true")
@@ -348,6 +355,34 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "guard":
             from .guard import main as guard_main
             return guard_main(args.guard_args)
+        if args.command == "sensors":
+            from .security_sensors import ScanBudget, ScanContext, Surface, runtime_registry
+            context = ScanContext(
+                requested_surfaces=frozenset(Surface(name) for name in (args.surface or _INSPECTABLE_SENSORS)),
+                budget=ScanBudget(max_items=4096, max_bytes=8 * 1024 * 1024, max_seconds=10, max_depth=5),
+            )
+            reports = runtime_registry().collect_all(context)
+            if args.json:
+                _print_json({
+                    "schema": 1,
+                    "reports": [{
+                        "surface": report.descriptor.surface.value,
+                        "coverage": report.coverage.value,
+                        "reason": report.reason,
+                        "inspected_items": report.inspected_items,
+                        "inspected_bytes": report.inspected_bytes,
+                        "skipped_items": report.skipped_items,
+                        "error_items": report.error_items,
+                        "evidence": [item.to_dict() for item in report.evidence],
+                    } for report in reports],
+                })
+            else:
+                for report in reports:
+                    print(f"{report.descriptor.surface.value}: {report.coverage.value}, "
+                          f"{len(report.evidence)} observations")
+                    if report.reason:
+                        print(f"  {report.reason}")
+            return 0
         if args.command == "config" and args.config_command == "init":
             created = write_default_config(config_path, overwrite=args.force)
             print(f"Created configuration: {created}")

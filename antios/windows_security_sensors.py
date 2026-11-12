@@ -1233,6 +1233,9 @@ def build_windows_registry(*, evidence_bus=None) -> SensorRegistry:
 
     if os.name != "nt":
         raise OSError("Windows security sensors are only available on Windows")
+    from .windows_browser_sensor import WindowsBrowserSensor
+    from .windows_hardware_inventory import WindowsHardwareInventorySensor
+    from .windows_network_sensor import WindowsNetworkSensor
     from .windows_platform_sensors import (
         WindowsAttestationSensor,
         WindowsBootSensor,
@@ -1253,6 +1256,10 @@ def build_windows_registry(*, evidence_bus=None) -> SensorRegistry:
         Surface.PROCESS: WindowsProcessSensor(process_provider),
         Surface.PERSISTENCE: WindowsPersistenceSensor(persistence_provider),
         Surface.RAM: WindowsMemorySensor(process_provider, memory_provider),
+        Surface.NETWORK: WindowsNetworkSensor(WindowsProcessProvider(cache_seconds=0)),
+        Surface.BROWSER: WindowsBrowserSensor(),
+        Surface.GPU: WindowsHardwareInventorySensor(Surface.GPU),
+        Surface.DEVICE_FIRMWARE: WindowsHardwareInventorySensor(Surface.DEVICE_FIRMWARE),
         Surface.DRIVER: WindowsDriverSensor(driver_provider),
         Surface.BOOT: WindowsBootSensor(platform_provider),
         Surface.UEFI: WindowsUefiSensor(platform_provider),

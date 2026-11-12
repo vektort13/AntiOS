@@ -21,6 +21,14 @@ def test_temporal_correlation_is_not_stated_as_causation():
     assert "does not prove" in explain_incident(incident, "en")["reasons"][0]["text"]
 
 
+def test_network_memory_signature_is_explained_for_review():
+    report = explain_incident({"nodes": [
+        {"id": "correlation", "kind": "evidence", "data": {"source": "signature:network.private-pe-public-peer"}},
+    ]})
+    assert "TCP" in report["reasons"][0]["text"]
+    assert report["confirmed"] is False
+
+
 def test_incomplete_scan_prioritizes_self_check_and_retains_confirmed_evidence():
     report = explain_incident({"confirmed_threat": True, "nodes": [
         {"kind": "risk", "data": {"scanner_complete": False}}]})

@@ -383,7 +383,12 @@ class Guard:
             )
             combined = (*raw, *signatures)
             if combined:
-                self.incidents.observe_evidence(combined)
+                matched_subjects = {item.subject for item in signatures}
+                self.incidents.observe_evidence(sorted(
+                    combined, key=lambda item: (
+                        item.risk_score >= 40, item.subject in matched_subjects, item.risk_score,
+                    ), reverse=True,
+                ))
                 self._publish_incidents(store)
 
             summary = CoverageSummary.from_reports(tuple(reports))
@@ -616,7 +621,7 @@ class Guard:
                 if self.security_registry is not None:
                     if now >= next_deep_runtime:
                         if self._start_deep_security(
-                            (Surface.PROCESS, Surface.RAM),
+                            (Surface.PROCESS, Surface.RAM, Surface.NETWORK),
                             ScanBudget(
                                 max_items=20_000,
                                 max_bytes=16 * 1024 * 1024,
@@ -627,11 +632,12 @@ class Guard:
                             next_deep_runtime = now + _DEEP_RUNTIME_INTERVAL
                     if now >= next_deep_persistence:
                         if self._start_deep_security(
-                            (Surface.PERSISTENCE,),
+                            (Surface.PERSISTENCE, Surface.BROWSER),
                             ScanBudget(
                                 max_items=5_000,
-                                max_bytes=0,
+                                max_bytes=2 * 1024 * 1024,
                                 max_seconds=12.0,
+                                max_depth=5,
                                 allow_privileged=True,
                             ),
                         ):
@@ -646,6 +652,8 @@ class Guard:
                                 Surface.UEFI,
                                 Surface.DMA,
                                 Surface.ATTESTATION,
+                                Surface.GPU,
+                                Surface.DEVICE_FIRMWARE,
                             ),
                             ScanBudget(
                                 max_items=4_096,

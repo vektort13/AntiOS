@@ -21,6 +21,9 @@ _RULES = {
     "interpreter-with-mass-file-changes": (
         "Работа интерпретатора совпала с массовыми изменениями файлов. Совпадение по времени не доказывает, что именно он изменил файлы.",
         "An interpreter was active during many file changes. Timing alone does not prove that it changed those files."),
+    "network.private-pe-public-peer": (
+        "У одного процесса обнаружены PE-заголовок в исполняемой приватной памяти и активное TCP-соединение с публичным адресом.",
+        "The same process had a PE header in private executable memory and an established TCP connection to a public address."),
 }
 
 
@@ -37,6 +40,8 @@ def explain_incident(incident: dict, language="ru") -> dict:
             continue
         data = node.get("data") if isinstance(node.get("data"), dict) else {}
         rule = data.get("rule")
+        if node.get("kind") == "evidence" and data.get("source") == "signature:network.private-pe-public-peer":
+            rule = "network.private-pe-public-peer"
         if isinstance(rule, str) and rule not in seen:
             seen.add(rule)
             phrase = _RULES.get(rule)
