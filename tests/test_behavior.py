@@ -70,6 +70,8 @@ def test_mass_file_changes_are_bounded_and_deduplicated():
     for index in range(10):
         findings += behavior.observe_file_change(fr"C:\Data\file-{index}.txt")
     assert [item.rule for item in findings] == ["mass-file-changes"]
+    assert findings[0].severity == "medium"
+    assert "distinct paths" in findings[0].summary
     for index in range(10, 20):
         findings += behavior.observe_file_change(fr"C:\Data\file-{index}.txt")
     assert [item.rule for item in findings].count("mass-file-changes") == 1

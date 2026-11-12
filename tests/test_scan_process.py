@@ -23,6 +23,16 @@ def test_real_worker_returns_report_and_can_restart(tmp_path):
         assert target.read_text() == 'ordinary benign fixture'
 
 
+def test_worker_transport_is_not_scanned_inside_the_target(tmp_path):
+    target = tmp_path / 'normal.txt'
+    target.write_text('ordinary benign fixture')
+    result = scan_process.run_scan_process(tmp_path, scratch_dir=tmp_path, use_cache=False)
+    assert result['coverage'] == 'antios-local-inspection'
+    assert result['issues'] == []
+    assert result['summary']['files_scanned'] == 1
+    assert list(tmp_path.iterdir()) == [target]
+
+
 def test_forced_stop_reaps_blocked_child_and_keeps_checkpoint(tmp_path, monkeypatch):
     script = tmp_path / 'blocked.py'
     started = tmp_path / 'started'

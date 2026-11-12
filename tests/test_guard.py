@@ -438,9 +438,12 @@ def test_subtree_events_reset_descendants_but_exclude_guard_storage(tmp_path):
     instance.pending[nested] = ((), 0)
     assert not instance.invalidate_changes(ChangeBatch(paths=(state / 'events.db',)))
     assert not instance.invalidate_changes(ChangeBatch(paths=(tmp_path / 'outside',)))
-    assert instance.invalidate_changes(ChangeBatch(paths=(nested.parent,)))
+    assert instance.invalidate_changes(ChangeBatch(
+        paths=(nested.parent, state / 'events.db', tmp_path / 'outside'),
+    ))
     assert nested not in instance.known and sibling in instance.known
     assert instance.pending[nested][1] > time.monotonic()
+    assert instance.behavior.status()['file_events'] == 1
 
 
 def test_repeated_root_rescans_do_not_starve_files_beyond_queue_capacity(tmp_path):

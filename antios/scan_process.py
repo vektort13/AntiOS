@@ -18,7 +18,7 @@ from .windows_process import hidden_process_kwargs
 import time
 from typing import Callable
 
-from .antivirus import DEFAULT_SCAN_PROFILE, finalize_scan_result, scan_files, utc_now
+from .antivirus import DEFAULT_SCAN_PROFILE, checked_path, finalize_scan_result, scan_files, utc_now
 from .quarantine import default_quarantine_path
 from .scan_cache import default_scan_cache_path
 
@@ -57,6 +57,7 @@ def worker_main(request_path: str, events_path: str) -> int:
                        engine_service=request.get("engine_service"),
                        require_verified_peer=bool(request.get("require_verified_peer", False)),
                        excluded_paths=(default_quarantine_path(),), checkpoint=checkpoint,
+                       worker_files=(Path(request_path), Path(events_path)),
                        workers=request.get("workers"),
                        profile=request.get("profile", DEFAULT_SCAN_PROFILE),
                        cache_path=default_scan_cache_path(),
@@ -85,6 +86,23 @@ def _terminate(process: subprocess.Popen) -> None:
             process.wait(timeout=2)
 
 
+def _worker_workspace(scratch_dir: Path | None) -> tempfile.TemporaryDirectory:
+    if scratch_dir is not None:
+        return tempfile.TemporaryDirectory(prefix="antios-scan-", dir=checked_path(scratch_dir))
+    # Keep ordinary scan traffic out of watched Temp when the local app
+    # directory is writable. Otherwise preserve the system temp fallback.
+    scratch_dir = default_scan_cache_path().absolute().parent
+    try:
+        ancestor = scratch_dir
+        while ancestor != ancestor.parent and not ancestor.exists():
+            ancestor = ancestor.parent
+        checked_path(ancestor)
+        scratch_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        return tempfile.TemporaryDirectory(prefix="antios-scan-", dir=checked_path(scratch_dir))
+    except (OSError, ValueError):
+        return tempfile.TemporaryDirectory(prefix="antios-scan-")
+
+
 def run_scan_process(path: Path, *, signature_path: Path | None = None,
                      engine: str = "antios",
                      engine_service: str | None = None,
@@ -92,6 +110,7 @@ def run_scan_process(path: Path, *, signature_path: Path | None = None,
                      workers: int | None = None,
                      profile: str = DEFAULT_SCAN_PROFILE,
                      use_cache: bool = True,
+                     scratch_dir: Path | None = None,
                      timeout: float | None = None,
                      cancelled: Callable[[], bool] = lambda: False,
                      progress: Callable[[dict], None] | None = None) -> dict:
@@ -99,7 +118,7 @@ def run_scan_process(path: Path, *, signature_path: Path | None = None,
     if timeout is not None and (not math.isfinite(timeout) or timeout <= 0):
         raise ValueError("Scan process timeout must be finite and positive")
     done, failure = False, None
-    with tempfile.TemporaryDirectory(prefix="antios-scan-") as folder:
+    with _worker_workspace(scratch_dir) as folder:
         request, events = Path(folder) / "request.json", Path(folder) / "events.jsonl"
         request.write_text(json.dumps({
             "path": str(Path(path).absolute()),

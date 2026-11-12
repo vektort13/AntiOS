@@ -243,23 +243,36 @@ if ($existing) {
 Stop-ManagedGuardProcess $exe
 
 Register-ScheduledTask -TaskPath '\' -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'AntiOS Engine local post-write monitoring; no pre-execution blocking.' -Force | Out-Null
+$startedAfter = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() / 1000
 Start-ScheduledTask -TaskPath '\' -TaskName $taskName
 
-# The Guard is long-lived. If the task immediately returns to Ready, capture the
-# Task Scheduler result now instead of leaving the GUI with a stale heartbeat.
+# Task Scheduler can report Running before Guard has opened its state database.
+# Require a heartbeat from the new run before reporting a successful start.
 $observedRunning = $false
-for ($attempt = 0; $attempt -lt 30; $attempt++) {
-    Start-Sleep -Milliseconds 200
+$startupClock = [Diagnostics.Stopwatch]::StartNew()
+do {
     $task = Get-ScheduledTask -TaskPath '\' -TaskName $taskName -ErrorAction SilentlyContinue
     if ($task -and $task.State -eq 'Running') {
-        $observedRunning = $true
-        break
+        try {
+            $rawStatus = & $exe status --state-dir $folder 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                $status = $rawStatus | ConvertFrom-Json
+                if ($status.kind -eq 'antivirus-guard' -and $status.running -eq $true -and $status.state -ne 'starting' -and
+                    $status.started_at -ge $startedAfter -and $status.heartbeat -ge $startedAfter) {
+                    $observedRunning = $true
+                    break
+                }
+            }
+        } catch {
+            # State can be absent or unreadable while the new process starts.
+        }
     }
-}
+    Start-Sleep -Milliseconds 500
+} while ($startupClock.Elapsed.TotalSeconds -lt 20)
 if (-not $observedRunning) {
     $info = Get-ScheduledTaskInfo -TaskPath '\' -TaskName $taskName -ErrorAction SilentlyContinue
     $last = if ($info) { $info.LastTaskResult } else { '(unavailable)' }
-    throw "Resident Guard task exited during startup. LastTaskResult=$last"
+    throw "Resident Guard did not publish a fresh heartbeat after startup. LastTaskResult=$last"
 }
 
 Write-Output "Started '$taskName'. Stop: AntiOS-Guard.exe stop. Remove startup: guard-startup.ps1 -Uninstall -Apply."

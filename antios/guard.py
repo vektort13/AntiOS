@@ -174,7 +174,7 @@ class Guard:
                 raise ValueError('A watched root cannot be inside protected Guard, quarantine or Defender storage')
         if scanner is None:
             self.scanner = lambda path, **kwargs: run_scan_process(
-                path, **kwargs)
+                path, scratch_dir=self.state_dir, **kwargs)
         else:
             self.scanner = scanner
         self.probe = (lambda: probe_engine(scan_engine=policy.scan_engine)) if probe is None else probe
@@ -493,12 +493,13 @@ class Guard:
                     and not any(path == root or root in path.parents for root in self.excluded)}
         if not affected:
             return False
-        if batch.paths:
+        changed_paths = tuple(path for path in batch.paths if path in affected)
+        if changed_paths:
             behavior_findings = self.behavior.observe_many_file_changes(
-                str(path) for path in batch.paths
+                str(path) for path in changed_paths
             )
             self._queue_behavior_findings(behavior_findings)
-            for path in batch.paths:
+            for path in changed_paths:
                 self.incidents.observe_file_change(str(path))
             self.incidents.observe_behavior_findings(
                 finding.to_dict() for finding in behavior_findings

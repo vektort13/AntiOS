@@ -245,6 +245,7 @@ def scan_files(
     engine_service: str | None = None,
     require_verified_peer: bool = False,
     excluded_paths: tuple[Path, ...] = (),
+    worker_files: tuple[Path, ...] = (),
     checkpoint: Callable[[dict], None] | None = None,
     workers: int | None = None,
     profile: str = DEFAULT_SCAN_PROFILE,
@@ -303,6 +304,7 @@ def scan_files(
         result["engine"]["detail"] = str(exc)
 
     exclusions = tuple(Path(os.path.abspath(p)) for p in excluded_paths)
+    transport = frozenset(Path(os.path.abspath(p)) for p in worker_files)
     stopped = cancelled or (lambda: False)
 
     def issue(item: Path, reason: str, *, error: bool = False) -> None:
@@ -339,11 +341,14 @@ def scan_files(
                     stack.pop()
                     entries.close()
                     continue
+                item = Path(entry.path)
+                # The worker creates these exact files after the scan is requested.
+                if item in transport:
+                    continue
                 if max_files is not None and summary["entries_seen"] >= max_files * 2:
                     summary["limit_reached"] = True
                     return
                 summary["entries_seen"] += 1
-                item = Path(entry.path)
                 if exclude(item):
                     issue(item, "quarantine-excluded")
                     continue

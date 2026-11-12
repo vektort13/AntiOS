@@ -207,8 +207,8 @@ class BehaviorEngine:
             )
 
         return self._finding(
-            "mass-file-changes", "high", 80,
-            f"{len(recent_unique)} distinct files changed within {self.mass_window:g}s",
+            "mass-file-changes", "medium", 65,
+            f"{len(recent_unique)} distinct paths changed within {self.mass_window:g}s",
             "filesystem", now,
         )
 
