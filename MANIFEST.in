@@ -1,0 +1,4 @@
+include release/windows-runtime-files.json
+include scripts/release-payload.py
+recursive-include scripts *.ps1
+include scripts/guard-state-access.cs

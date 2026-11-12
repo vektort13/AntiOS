@@ -1,0 +1,24 @@
+AntiOS v2
+Copyright 2026 Dargon777 and AntiOS contributors
+
+This product includes software developed for the AntiOS project.
+
+The Apache License, Version 2.0 applies to the current AntiOS v2 source tree
+and contributions unless a file explicitly states otherwise.
+
+Repository history predating the AntiOS v2 rewrite contains legacy material
+originating from the historical upstream repository vektort13/AntiOS. The
+adoption of Apache-2.0 for AntiOS v2 does not retroactively relicense
+third-party historical material for which Dargon777 does not hold the
+necessary rights.
+
+Historical repository revisions also contained an experimental native Windows
+filter/service and AMSI provider derived in part from Microsoft Windows-driver-
+samples / AvScan under the Microsoft Public License (MS-PL). These legacy
+components are not part of the current AntiOS Engine, distribution or source
+tree; their license notices and provenance remain in the Git history.
+No ClamAV executable, native minifilter driver or AMSI provider is bundled.
+
+The signed starter catalog contains public sector information from the UK
+National Cyber Security Centre, licensed under the Open Government Licence v3.0.
+https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/

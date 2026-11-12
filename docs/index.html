@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#080e12" />
+    <meta
+      name="description"
+      content="AntiOS — открытый проект защиты, диагностики и восстановления файлов. Ваша система. Ваши правила."
+    />
+    <meta property="og:title" content="AntiOS — Ваша система. Ваши правила." />
+    <meta
+      property="og:description"
+      content="Проверка файлов, карантин, диагностика и восстановление. Открытый код. Локальная обработка. Осознанный контроль."
+    />
+    <meta property="og:type" content="website" />
+    <title>AntiOS — Ваша система. Ваши правила.</title>
+    <link rel="icon" href="assets/mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+    <script src="sphere.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main" data-i18n="skip">Перейти к содержимому</a>
+    <header class="site-header">
+      <div class="shell nav">
+        <a class="brand" href="#" aria-label="AntiOS"
+          ><img src="assets/mark.svg" width="31" height="34" alt="" /><span
+            >Anti<span class="brand-light">OS</span
+            ><span class="brand-dot">.</span></span
+          ></a
+        >
+        <span class="alpha-tag">V2 / ALPHA</span>
+        <nav
+          class="nav-links"
+          aria-label="Основная навигация"
+          data-label="navigation"
+        >
+          <a href="#capabilities" data-i18n="navCapabilities">Возможности</a
+          ><a href="#recovery" data-i18n="navRecovery">Восстановление</a
+          ><a href="#principles" data-i18n="navProject">О проекте</a>
+        </nav>
+        <div class="nav-actions">
+          <button
+            class="lang-button"
+            id="langButton"
+            type="button"
+            aria-label="Switch to English"
+            hidden
+          >
+            EN ↗
+          </button>
+          <a class="nav-download" href="#download"
+            ><span data-i18n="navDownload">Скачать</span
+            ><span aria-hidden="true">↗</span></a
+          >
+          <button
+            class="menu-button"
+            id="menuButton"
+            type="button"
+            aria-expanded="false"
+            aria-controls="mobileNav"
+            aria-label="Открыть или закрыть меню"
+            data-label="menu"
+            hidden
+          >
+            <span></span><span></span>
+          </button>
+        </div>
+      </div>
+      <nav
+        class="mobile-nav shell"
+        id="mobileNav"
+        aria-label="Мобильная навигация"
+        data-label="mobileNavigation"
+        hidden
+      >
+        <a href="#capabilities" data-i18n="navCapabilities">Возможности</a
+        ><a href="#recovery" data-i18n="navRecovery">Восстановление</a
+        ><a href="#principles" data-i18n="navProject">О проекте</a>
+      </nav>
+    </header>
+    <main id="main">
+      <section class="hero shell" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">
+            <span class="signal-dot" aria-hidden="true"></span
+            ><span data-i18n="heroEyebrow"
+              >НЕЗАВИСИМАЯ ЗАЩИТА. ОТКРЫТЫЙ КОД.</span
+            >
+          </p>
+          <h1 id="hero-title">
+            <span data-i18n="heroLine1">Спокойствие.</span><br /><span
+              data-i18n="heroLine2"
+              >Под вашим</span
+            ><br /><em data-i18n="heroLine3">контролем.</em>
+          </h1>
+          <p class="hero-lead" data-i18n="heroLead">
+            Знайте, что происходит с вашим компьютером. Проверяйте файлы,
+            сохраняйте важное и принимайте решения вместе с AntiOS.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#download"
+              ><svg class="icon" aria-hidden="true">
+                <use href="#i-download" /></svg
+              ><span data-i18n="getAntiOS">Скачать AntiOS</span
+              ><span class="button-arrow" aria-hidden="true">↗</span></a
+            ><a class="text-link" href="#capabilities"
+              ><span data-i18n="explore">Изучить систему</span
+              ><span aria-hidden="true">↓</span></a
+            >
+          </div>
+          <p class="hero-note">
+            <span class="windows-mark" aria-hidden="true">⊞</span> Windows 10 /
+            11 <span class="note-divider">/</span
+            ><span data-i18n="alphaNote"
+              >Public alpha · В активной разработке</span
+            >
+          </p>
+        </div>
+        <div class="hero-art" id="sphereStage">
+          <div class="art-heading mono">
+            <span
+              ><i class="tiny-cross" aria-hidden="true"></i> ANTIOS / CORE</span
+            ><span>VISUAL SYSTEM — 01</span>
+          </div>
+          <div class="sphere-wrap">
+            <div class="sphere-halo" aria-hidden="true"></div>
+            <svg
+              class="orbital-grid"
+              viewBox="0 0 600 600"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle cx="300" cy="300" r="266" />
+              <circle cx="300" cy="300" r="247" stroke-dasharray="1 12" />
+              <path
+                d="M300 15v30m0 510v30M15 300h30m510 0h30M108 108l14 14m356 356 14 14M108 492l14-14m356-356 14-14"
+              />
+              <path
+                class="orbit-accent"
+                d="M70 166a266 266 0 0 1 92-94M438 527a266 266 0 0 0 91-93"
+              />
+            </svg>
+            <img
+              class="sphere-fallback"
+              src="assets/sphere.svg"
+              width="600"
+              height="600"
+              alt=""
+              aria-hidden="true"
+            />
+            <canvas
+              id="sphereCanvas"
+              width="600"
+              height="600"
+              aria-hidden="true"
+            ></canvas>
+            <div class="sphere-label label-top mono">
+              <span class="label-line"></span>LOCAL-FIRST
+            </div>
+            <div class="sphere-label label-bottom mono">
+              YOUR DEVICE.<br />YOUR RULES.<span class="label-line"></span>
+            </div>
+            <span class="axis-mark axis-x mono" aria-hidden="true">X</span
+            ><span class="axis-mark axis-y mono" aria-hidden="true">Y</span>
+          </div>
+          <div class="art-footer">
+            <div>
+              <span class="art-caption mono" data-i18n="visualization"
+                >ИНТЕРАКТИВНАЯ ВИЗУАЛИЗАЦИЯ</span
+              >
+              <p data-i18n="visualCaption">Новый взгляд на вашу систему.</p>
+            </div>
+            <button
+              id="motionButton"
+              class="motion-button"
+              type="button"
+              aria-pressed="false"
+              hidden
+            >
+              <span class="motion-icon" aria-hidden="true">Ⅱ</span
+              ><span id="motionLabel">Пауза</span>
+            </button>
+          </div>
+        </div>
+        <div class="hero-bottom mono">
+          <span
+            >01 —
+            <span data-i18n="awareness"
+              >КОНТРОЛЬ НАЧИНАЕТСЯ С ПОНИМАНИЯ</span
+            ></span
+          ><a
+            href="#capabilities"
+            aria-label="Далее: возможности"
+            data-label="next"
+            >SCROLL TO EXPLORE <span aria-hidden="true">↓</span></a
+          >
+        </div>
+      </section>
+
+      <div class="principle-strip">
+        <div class="shell strip-grid">
+          <div>
+            <svg class="icon" aria-hidden="true"><use href="#i-code" /></svg
+            ><span data-i18n="stripOpen">Открытый по своей природе</span
+            ><span class="mono strip-detail">APACHE 2.0</span>
+          </div>
+          <div>
+            <svg class="icon" aria-hidden="true"><use href="#i-device" /></svg
+            ><span data-i18n="stripLocal">Данные остаются у вас</span
+            ><span class="mono strip-detail">LOCAL-FIRST</span>
+          </div>
+          <div>
+            <svg class="icon" aria-hidden="true"><use href="#i-sliders" /></svg
+            ><span data-i18n="stripControl">Решения принимаете вы</span
+            ><span class="mono strip-detail">YOU’RE IN CONTROL</span>
+          </div>
+        </div>
+      </div>
+
+      <section
+        class="section shell capabilities"
+        id="capabilities"
+        aria-labelledby="capabilities-title"
+      >
+        <div class="section-heading">
+          <p class="eyebrow">
+            <span class="section-index">01 /</span
+            ><span data-i18n="capKicker">ВОЗМОЖНОСТИ</span>
+          </p>
+          <div class="heading-row">
+            <h2 id="capabilities-title">
+              <span data-i18n="capTitle1">Видеть больше.</span><br /><span
+                class="muted-heading"
+                data-i18n="capTitle2"
+                >Действовать осознанно.</span
+              >
+            </h2>
+            <p data-i18n="capIntro">
+              От отдельного файла до общей картины. Инструменты, которые
+              помогают разобраться в системе и позаботиться о важном.
+            </p>
+          </div>
+        </div>
+        <div
+          class="capability-tabs"
+          role="tablist"
+          aria-label="Возможности AntiOS"
+          data-label="tabs"
+        >
+          <button
+            class="capability-tab"
+            id="tab-scan"
+            role="tab"
+            type="button"
+            aria-selected="true"
+            aria-controls="panel-scan"
+            tabindex="0"
+          >
+            <span class="mono">01</span
+            ><span data-i18n="tabScan">Проверить</span
+            ><svg class="icon" aria-hidden="true"><use href="#i-scan" /></svg>
+          </button>
+          <button
+            class="capability-tab"
+            id="tab-recover"
+            role="tab"
+            type="button"
+            aria-selected="false"
+            aria-controls="panel-recover"
+            tabindex="-1"
+          >
+            <span class="mono">02</span
+            ><span data-i18n="tabRecover">Сохранить</span
+            ><svg class="icon" aria-hidden="true"><use href="#i-layers" /></svg>
+          </button>
+          <button
+            class="capability-tab"
+            id="tab-inspect"
+            role="tab"
+            type="button"
+            aria-selected="false"
+            aria-controls="panel-inspect"
+            tabindex="-1"
+          >
+            <span class="mono">03</span
+            ><span data-i18n="tabInspect">Разобраться</span
+            ><svg class="icon" aria-hidden="true">
+              <use href="#i-sliders" />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="capability-panel"
+          id="panel-scan"
+          role="tabpanel"
+          aria-labelledby="tab-scan"
+          tabindex="0"
+        >
+          <div class="capability-copy">
+            <span class="small-kicker mono">FILE SECURITY</span>
+            <h3 data-i18n="scanTitle">Внимание к каждому файлу.</h3>
+            <p data-i18n="scanIntro">
+              Проверяйте выбранные файлы и папки. Изучайте находки, изолируйте
+              подозрительное в карантине и следите за состоянием защиты.
+            </p>
+            <ul class="feature-list">
+              <li data-i18n="scan1">
+                Проверка по запросу и опциональная фоновая защита
+              </li>
+              <li data-i18n="scan2">
+                Находки, пропуски и ошибки показаны отдельно
+              </li>
+              <li data-i18n="scan3">
+                Совместная работа с поддерживаемыми антивирусами
+              </li>
+            </ul>
+            <a
+              class="text-link cyan"
+              href="https://github.com/Dargon777/AntiOS/blob/master/docs/ANTIVIRUS.md"
+              ><span data-i18n="scanLink">О защите файлов</span
+              ><span aria-hidden="true">↗</span></a
+            >
+          </div>
+          <div class="system-illustration">
+            <div class="illustration-bar mono">
+              <span
+                ><span class="mini-mark">△</span> ANTIOS / FILE SECURITY</span
+              ><span class="demo-label" data-i18n="illustration"
+                >ИЛЛЮСТРАЦИЯ</span
+              >
+            </div>
+            <div class="scan-visual">
+              <div class="scan-orbit">
+                <svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
+                  <path
+                    d="m50 15 28 12v23c0 16-13 27-28 35-15-8-28-19-28-35V27Z"
+                  />
+                  <path d="m36 50 10 10 19-23" />
+                </svg>
+              </div>
+              <div class="file-stack">
+                <div>
+                  <svg class="icon" aria-hidden="true">
+                    <use href="#i-file" /></svg
+                  ><span>Documents</span><span class="file-state">01</span>
+                </div>
+                <div>
+                  <svg class="icon" aria-hidden="true">
+                    <use href="#i-file" /></svg
+                  ><span>Projects</span><span class="file-state">02</span>
+                </div>
+                <div>
+                  <svg class="icon" aria-hidden="true">
+                    <use href="#i-file" /></svg
+                  ><span>Downloads</span><span class="file-state">03</span>
+                </div>
+              </div>
+            </div>
+            <div class="illustration-bottom">
+              <span class="signal-dot" aria-hidden="true"></span
+              ><span data-i18n="scanCaption">Вы выбираете, что проверять.</span
+              ><span class="mono">ON DEMAND</span>
+            </div>
+          </div>
+        </div>
+        <div
+          class="capability-panel"
+          id="panel-recover"
+          role="tabpanel"
+          aria-labelledby="tab-recover"
+          tabindex="0"
+          hidden
+        >
+          <div class="capability-copy">
+            <span class="small-kicker mono">FILE RECOVERY</span>
+            <h3 data-i18n="recoverTitle">Сохранить то, что незаменимо.</h3>
+            <p data-i18n="recoverIntro">
+              Выберите файлы и папки, создайте эталонную копию и проверяйте
+              целостность. При необходимости восстановите сохранённое в
+              безопасное место.
+            </p>
+            <ul class="feature-list">
+              <li data-i18n="recover1">
+                Вы сами определяете, что нужно сохранить
+              </li>
+              <li data-i18n="recover2">
+                Сохранённые данные проверяются перед восстановлением
+              </li>
+              <li data-i18n="recover3">
+                Восстановление файлов, а не полный откат Windows
+              </li>
+            </ul>
+            <a
+              class="text-link cyan"
+              href="https://github.com/Dargon777/AntiOS/blob/master/docs/RECOVERY.md"
+              ><span data-i18n="recoverLink">О восстановлении</span
+              ><span aria-hidden="true">↗</span></a
+            >
+          </div>
+          <div class="system-illustration">
+            <div class="illustration-bar mono">
+              <span
+                ><span class="mini-mark">△</span> ANTIOS / FILE RECOVERY</span
+              ><span class="demo-label" data-i18n="illustration"
+                >ИЛЛЮСТРАЦИЯ</span
+              >
+            </div>
+            <div class="recovery-visual" aria-hidden="true">
+              <div class="layer layer-back"></div>
+              <div class="layer layer-mid"></div>
+              <div class="layer layer-front">
+                <svg class="icon"><use href="#i-file" /></svg
+                ><span class="mono">BASELINE</span>
+              </div>
+              <div class="recovery-orbit"></div>
+            </div>
+            <div class="illustration-bottom">
+              <span class="signal-dot" aria-hidden="true"></span
+              ><span data-i18n="recoverCaption"
+                >Точка опоры для ваших файлов.</span
+              ><span class="mono">INTEGRITY</span>
+            </div>
+          </div>
+        </div>
+        <div
+          class="capability-panel"
+          id="panel-inspect"
+          role="tabpanel"
+          aria-labelledby="tab-inspect"
+          tabindex="0"
+          hidden
+        >
+          <div class="capability-copy">
+            <span class="small-kicker mono">SYSTEM INSIGHT</span>
+            <h3 data-i18n="inspectTitle">Меньше догадок. Больше ясности.</h3>
+            <p data-i18n="inspectIntro">
+              Изучайте диагностику системы, локальные события и состояние
+              хранилища. Находите кандидатов на очистку и решайте, что делать
+              дальше.
+            </p>
+            <ul class="feature-list">
+              <li data-i18n="inspect1">
+                Диагностика Windows и состояния защиты
+              </li>
+              <li data-i18n="inspect2">
+                Очистка хранилища и поиск возможных дубликатов
+              </li>
+              <li data-i18n="inspect3">
+                Удаление требует явного подтверждения
+              </li>
+            </ul>
+            <a
+              class="text-link cyan"
+              href="https://github.com/Dargon777/AntiOS/blob/master/docs/STORAGE_INTELLIGENCE.md"
+              ><span data-i18n="inspectLink">О работе с хранилищем</span
+              ><span aria-hidden="true">↗</span></a
+            >
+          </div>
+          <div class="system-illustration">
+            <div class="illustration-bar mono">
+              <span
+                ><span class="mini-mark">△</span> ANTIOS / SYSTEM INSIGHT</span
+              ><span class="demo-label" data-i18n="illustration"
+                >ИЛЛЮСТРАЦИЯ</span
+              >
+            </div>
+            <div class="insight-visual">
+              <div class="insight-ring" aria-hidden="true">
+                <svg class="icon"><use href="#i-device" /></svg>
+              </div>
+              <div class="insight-legend">
+                <div><i></i><span data-i18n="system">Система</span></div>
+                <div><i></i><span data-i18n="files">Файлы</span></div>
+                <div>
+                  <i></i><span data-i18n="freeSpace">Свободное место</span>
+                </div>
+              </div>
+            </div>
+            <div class="illustration-bottom">
+              <span class="signal-dot" aria-hidden="true"></span
+              ><span data-i18n="inspectCaption"
+                >Сначала понять. Затем решить.</span
+              ><span class="mono">OVERVIEW</span>
+            </div>
+          </div>
+        </div>
+        <noscript
+          ><p class="no-script-note">
+            Анимация и вкладки требуют JavaScript. Информация о восстановлении и
+            проекте доступна ниже. / Animation and tabs require JavaScript;
+            recovery and project information remain available below.
+          </p>
+          <style>
+            .capability-tabs {
+              display: none;
+            }
+            .capability-panel[hidden] {
+              display: grid !important;
+            }
+          </style></noscript
+        >
+      </section>
+
+      <section
+        class="recovery-section"
+        id="recovery"
+        aria-labelledby="recovery-title"
+      >
+        <div class="shell section">
+          <div class="section-heading">
+            <p class="eyebrow">
+              <span class="section-index">02 /</span
+              ><span data-i18n="recoveryKicker">ТОЧКА ВОЗВРАТА</span>
+            </p>
+            <div class="heading-row">
+              <h2 id="recovery-title">
+                <span data-i18n="recoveryTitle1">Важные файлы.</span><br /><span
+                  class="muted-heading"
+                  data-i18n="recoveryTitle2"
+                  >Чуть больше спокойствия.</span
+                >
+              </h2>
+              <p data-i18n="recoveryIntro">
+                Ваша работа, идеи и проекты. Создайте эталонную копию до того,
+                как она понадобится.
+              </p>
+            </div>
+          </div>
+          <ol class="recovery-steps">
+            <li>
+              <div class="step-top">
+                <span class="mono">01 / SELECT</span
+                ><svg class="icon" aria-hidden="true">
+                  <use href="#i-file" />
+                </svg>
+              </div>
+              <h3 data-i18n="step1Title">Выберите важное</h3>
+              <p data-i18n="step1Body">
+                Добавьте файлы и папки, которые хотите сохранить. Область защиты
+                задаёте вы.
+              </p>
+              <span class="step-arrow" aria-hidden="true">↗</span>
+            </li>
+            <li>
+              <div class="step-top">
+                <span class="mono">02 / PRESERVE</span
+                ><svg class="icon" aria-hidden="true">
+                  <use href="#i-layers" />
+                </svg>
+              </div>
+              <h3 data-i18n="step2Title">Создайте эталон</h3>
+              <p data-i18n="step2Body">
+                Сохраните эталонную копию и используйте проверку целостности,
+                чтобы увидеть изменения.
+              </p>
+              <span class="step-arrow" aria-hidden="true">↗</span>
+            </li>
+            <li>
+              <div class="step-top">
+                <span class="mono">03 / RECOVER</span
+                ><svg class="icon" aria-hidden="true">
+                  <use href="#i-restore" />
+                </svg>
+              </div>
+              <h3 data-i18n="step3Title">Верните сохранённое</h3>
+              <p data-i18n="step3Body">
+                Проверьте сохранённые данные и восстановите их в безопасное
+                место.
+              </p>
+              <span class="step-arrow" aria-hidden="true">↗</span>
+            </li>
+          </ol>
+          <p class="section-footnote">
+            <span aria-hidden="true">↳</span
+            ><span data-i18n="recoveryLimit"
+              >Восстановление файлов не заменяет резервную копию всей системы и
+              не гарантирует отсутствие угроз в сохранённых данных.</span
+            >
+          </p>
+        </div>
+      </section>
+
+      <section
+        class="section shell principles"
+        id="principles"
+        aria-labelledby="principles-title"
+      >
+        <div class="principles-copy">
+          <p class="eyebrow">
+            <span class="section-index">03 /</span
+            ><span data-i18n="trustKicker">ОСНОВА ДОВЕРИЯ</span>
+          </p>
+          <h2 id="principles-title">
+            <span data-i18n="trustTitle1">Без чёрного ящика.</span><br /><span
+              class="muted-heading"
+              data-i18n="trustTitle2"
+              >Без магических обещаний.</span
+            >
+          </h2>
+          <p data-i18n="trustIntro">
+            Хорошая защита начинается с честных ожиданий. AntiOS — независимый
+            открытый проект с понятными возможностями и обозначенными
+            ограничениями.
+          </p>
+          <a class="text-link cyan" href="https://github.com/Dargon777/AntiOS"
+            ><svg class="icon" aria-hidden="true"><use href="#i-code" /></svg
+            ><span data-i18n="source">Посмотреть исходный код</span
+            ><span aria-hidden="true">↗</span></a
+          >
+          <div class="open-source-stamp mono" aria-hidden="true">
+            <span>OPEN</span><span>SOURCE ↗</span
+            ><small>INSPECT. UNDERSTAND. CONTRIBUTE.</small>
+          </div>
+        </div>
+        <div class="principles-list">
+          <details open>
+            <summary>
+              <span class="mono">01</span
+              ><span data-i18n="privacyTitle">Ваши данные принадлежат вам</span
+              ><span class="expand-mark" aria-hidden="true"></span>
+            </summary>
+            <div class="detail-content">
+              <p data-i18n="privacyBody">
+                Данные защиты и диагностики по умолчанию обрабатываются
+                локально. Автоматическая телеметрия проекта не включена.
+                Проверяйте диагностические отчёты перед отправкой.
+              </p>
+              <a
+                href="https://github.com/Dargon777/AntiOS/blob/master/PRIVACY.md"
+                data-i18n="privacyLink"
+                >Политика конфиденциальности ↗</a
+              >
+            </div>
+          </details>
+          <details>
+            <summary>
+              <span class="mono">02</span
+              ><span data-i18n="openTitle">Открытый код. Видимый прогресс.</span
+              ><span class="expand-mark" aria-hidden="true"></span>
+            </summary>
+            <div class="detail-content">
+              <p data-i18n="openBody">
+                Исходный код v2 доступен под лицензией Apache 2.0. Релизы и
+                автоматические проверки публикуются на GitHub — за развитием
+                проекта можно следить.
+              </p>
+              <a
+                href="https://github.com/Dargon777/AntiOS/actions"
+                data-i18n="openLink"
+                >Посмотреть проверки ↗</a
+              >
+            </div>
+          </details>
+          <details>
+            <summary>
+              <span class="mono">03</span
+              ><span data-i18n="alphaTitle">Alpha — значит в разработке</span
+              ><span class="expand-mark" aria-hidden="true"></span>
+            </summary>
+            <div class="detail-content">
+              <p data-i18n="alphaBody">
+                AntiOS — предварительная версия и дополнительный слой защиты.
+                Проект не заявляет статус сертифицированного основного
+                антивируса или обнаружение любых угроз. Сохраняйте основную
+                защиту включённой.
+              </p>
+              <a
+                href="https://github.com/Dargon777/AntiOS/blob/master/docs/COEXISTENCE.md"
+                data-i18n="alphaLink"
+                >Совместимость и ограничения ↗</a
+              >
+            </div>
+          </details>
+          <details>
+            <summary>
+              <span class="mono">04</span
+              ><span data-i18n="platformTitle">Для каких систем подходит?</span
+              ><span class="expand-mark" aria-hidden="true"></span>
+            </summary>
+            <div class="detail-content">
+              <p data-i18n="platformBody">
+                Основная платформа — Windows 10 22H2 x64 и более новые сборки
+                Windows 11. Для Linux предусмотрена дополнительная
+                companion-поддержка. Требования к пакетам указаны в описании
+                релиза.
+              </p>
+              <a
+                href="https://github.com/Dargon777/AntiOS/releases"
+                data-i18n="platformLink"
+                >Описание релизов ↗</a
+              >
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section
+        class="download-section shell"
+        id="download"
+        aria-labelledby="download-title"
+      >
+        <div class="download-panel">
+          <div class="download-orbit" aria-hidden="true"></div>
+          <div class="download-copy">
+            <p class="eyebrow">
+              <span class="signal-dot" aria-hidden="true"></span>READY WHEN YOU
+              ARE
+            </p>
+            <h2 id="download-title">
+              <span data-i18n="downloadTitle1">Ваша система.</span><br /><em
+                data-i18n="downloadTitle2"
+                >Ваши правила.</em
+              >
+            </h2>
+            <p data-i18n="downloadIntro">
+              Посмотрите на неё по-новому. Попробуйте AntiOS и станьте частью
+              развития проекта.
+            </p>
+          </div>
+          <div class="download-actions">
+            <span class="release-label mono"
+              >ANTI<span>OS</span> / PUBLIC ALPHA</span
+            ><a
+              class="button primary"
+              id="downloadButton"
+              href="https://github.com/Dargon777/AntiOS/releases"
+              ><svg class="icon" aria-hidden="true">
+                <use href="#i-download" /></svg
+              ><span data-i18n="releaseButton">Релизы для Windows</span
+              ><span class="button-arrow" aria-hidden="true">↗</span></a
+            ><span class="download-format mono"
+              >WINDOWS 10 / 11 · x64 · SETUP / PORTABLE</span
+            ><a
+              class="text-link"
+              href="https://github.com/Dargon777/AntiOS/blob/master/docs/LINUX.md"
+              ><span data-i18n="linuxLink">Linux companion и документация</span
+              ><span aria-hidden="true">↗</span></a
+            >
+          </div>
+          <p class="download-warning">
+            <svg class="icon" aria-hidden="true"><use href="#i-info" /></svg
+            ><span data-i18n="downloadWarning"
+              >Предварительная версия. Изучите описание релиза и сохраните
+              резервные копии важных данных.</span
+            >
+          </p>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer shell">
+      <div class="footer-top">
+        <a class="brand" href="#" aria-label="AntiOS"
+          ><img src="assets/mark.svg" width="29" height="32" alt="" /><span
+            >Anti<span class="brand-light">OS</span
+            ><span class="brand-dot">.</span></span
+          ></a
+        ><span class="footer-tagline" data-i18n="footerTagline"
+          >Понимание. Контроль. Спокойствие.</span
+        >
+        <nav aria-label="Ссылки проекта" data-label="projectLinks">
+          <a href="https://github.com/Dargon777/AntiOS">GitHub ↗</a
+          ><a
+            href="https://github.com/Dargon777/AntiOS/blob/master/PRIVACY.md"
+            data-i18n="privacy"
+            >Конфиденциальность</a
+          ><a
+            href="https://github.com/Dargon777/AntiOS/security/policy"
+            data-i18n="security"
+            >Безопасность</a
+          >
+        </nav>
+      </div>
+      <div class="footer-bottom mono">
+        <span>© <span id="year">2026</span> ANTIOS · APACHE 2.0</span
+        ><span data-i18n="independent">НЕЗАВИСИМОСТЬ — В ОСНОВЕ.</span
+        ><a href="#" data-i18n="top">НАВЕРХ ↑</a>
+      </div>
+    </footer>
+    <svg
+      class="icon-definitions"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <defs>
+        <symbol id="i-download" viewBox="0 0 24 24">
+          <path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5" />
+        </symbol>
+        <symbol id="i-code" viewBox="0 0 24 24">
+          <path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-15-2 18" />
+        </symbol>
+        <symbol id="i-device" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="13" rx="2" />
+          <path d="M8 21h8m-4-5v5M7 12V8m5 4V6m5 6V9" />
+        </symbol>
+        <symbol id="i-sliders" viewBox="0 0 24 24">
+          <path
+            d="M5 3v5m0 4v9m7-18v10m0 4v4m7-18v2m0 4v12M2 8h6v4H2zm7 5h6v4H9zm7-8h6v4h-6z"
+          />
+        </symbol>
+        <symbol id="i-scan" viewBox="0 0 24 24">
+          <path d="M3 8V3h5m8 0h5v5m0 8v5h-5m-8 0H3v-5M2 12h20" />
+        </symbol>
+        <symbol id="i-layers" viewBox="0 0 24 24">
+          <path d="m12 2 10 5-10 5L2 7Zm-10 10 10 5 10-5M2 17l10 5 10-5" />
+        </symbol>
+        <symbol id="i-file" viewBox="0 0 24 24">
+          <path d="M13 2H5v20h14V8Zm0 0v6h6M8 13h8m-8 4h6" />
+        </symbol>
+        <symbol id="i-restore" viewBox="0 0 24 24">
+          <path d="M3 4v6h6M3 10a9 9 0 1 1 1 7m8-11v6l4 2" />
+        </symbol>
+        <symbol id="i-info" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 11v6m0-10v1" />
+        </symbol>
+      </defs>
+    </svg>
+  </body>
+</html>

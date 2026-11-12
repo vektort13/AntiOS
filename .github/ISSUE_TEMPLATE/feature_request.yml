@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest a safe, reversible AntiOS v2 improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Safety boundaries
+      options:
+        - label: The proposal can preserve dry-run-by-default behavior.
+          required: true
+        - label: The proposal does not require anti-cheat, ban, licensing, hardware-serial, storage-serial or network-identity bypasses.
+          required: true

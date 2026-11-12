@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a reproducible AntiOS v2 problem
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Do not paste secrets, backup files, Registry exports or personal identifiers.
+        Security vulnerabilities, bypasses, exploit details, trust-boundary weaknesses or internal protection architecture must not be posted in a public issue. Use the private reporting route in SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: AntiOS version
+      placeholder: "2.0.0a1"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version/build
+      placeholder: "Windows 11 24H2, build 26100.x"
+    validations:
+      required: true
+  - type: dropdown
+    id: command
+    attributes:
+      label: Area
+      options:
+        - scan
+        - doctor
+        - plan
+        - backup
+        - apply
+        - restore
+        - config
+        - portable build/install
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Please redact machine identifiers and private data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true

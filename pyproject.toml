@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "antios"
+dynamic = ["version"]
+description = "Antivirus companion scanning, storage intelligence and Windows/Linux diagnostics"
+dependencies = [
+  "cryptography>=44",
+  "Pillow>=10.4; platform_system == \"Windows\"",
+  "pystray>=0.19.5; platform_system == \"Windows\"",
+]
+requires-python = ">=3.11"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Dargon777 and AntiOS contributors" }]
+keywords = ["windows", "linux", "privacy", "health", "security", "antivirus", "diagnostics", "cli", "desktop"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Environment :: Win32 (MS Windows)",
+  "Intended Audience :: End Users/Desktop",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Topic :: System :: Systems Administration",
+]
+
+[project.urls]
+Homepage = "https://github.com/Dargon777/AntiOS"
+Repository = "https://github.com/Dargon777/AntiOS"
+Issues = "https://github.com/Dargon777/AntiOS/issues"
+Changelog = "https://github.com/Dargon777/AntiOS/blob/master/CHANGELOG.md"
+
+[project.scripts]
+antios = "antios.cli:main"
+antios-guard = "antios.guard:main"
+
+[project.gui-scripts]
+antios-gui = "antios.dashboard:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "antios.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["antios*"]
+
+[tool.setuptools.package-data]
+antios = ["assets/icons/*.png", "assets/windows/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

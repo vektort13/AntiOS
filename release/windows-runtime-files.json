@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "files": [
+    "scripts/guard-startup.ps1",
+    "scripts/guard-state-access.cs",
+    "scripts/dashboard-startup.ps1",
+    "scripts/guard-trust.ps1",
+    "scripts/protection-first-run.ps1"
+  ]
+}

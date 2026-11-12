@@ -1,0 +1,14 @@
+VSVersionInfo(
+  ffi=FixedFileInfo(filevers=(3, 0, 2, 0), prodvers=(3, 0, 2, 0),
+                   mask=0x3f, flags=0x2, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),
+  kids=[StringFileInfo([StringTable('040904B0', [
+    StringStruct('CompanyName', 'DargonITP'),
+    StringStruct('FileDescription', 'AntiOS Antivirus'),
+    StringStruct('FileVersion', '3.0.2a1'),
+    StringStruct('InternalName', 'AntiOS-GUI.exe'),
+    StringStruct('OriginalFilename', 'AntiOS-GUI.exe'),
+    StringStruct('ProductName', 'AntiOS'),
+    StringStruct('ProductVersion', '3.0.2a1'),
+    StringStruct('LegalCopyright', 'Copyright 2026 Dargon777 and AntiOS contributors')
+  ])]), VarFileInfo([VarStruct('Translation', [1033, 1200])])]
+)

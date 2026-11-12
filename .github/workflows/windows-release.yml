@@ -1,0 +1,759 @@
+name: AntiOS release
+
+on:
+  workflow_dispatch:
+    inputs:
+      signed_release:
+        description: "Attach signed builds to the existing release draft (master only)"
+        type: boolean
+        required: true
+        default: false
+  pull_request:
+    paths:
+      - "antios/**"
+      - "tests/**"
+      - "scripts/**"
+      - "native/**"
+      - "installer/**"
+      - "release/**"
+      - "LICENSE"
+      - "NOTICE"
+      - "antios_entry.py"
+      - "antios_gui_entry.py"
+      - "antios_guard_entry.py"
+      - "pyproject.toml"
+      - "setup.py"
+      - "MANIFEST.in"
+      - ".github/workflows/windows-release.yml"
+  push:
+    branches: ["master"]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+concurrency:
+  group: antios-portable-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse unconfigured signed release
+        if: github.event_name == 'workflow_dispatch' && inputs.signed_release == true && (github.ref != 'refs/heads/master' || vars.ENABLE_ARTIFACT_SIGNING != 'true')
+        shell: pwsh
+        run: throw 'Signed release requires master and configured Artifact Signing'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install build dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install pytest pyinstaller build twine
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install -e .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Install NSIS compiler
+        shell: pwsh
+        run: |
+          $makensis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          # Chocolatey's package feed can intermittently return 5xx. Retry the
+          # install and reuse an already available compiler on the runner.
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            if (Test-Path -LiteralPath $makensis) { break }
+            choco install nsis --no-progress -y
+            if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $makensis)) { break }
+            if ($attempt -lt 3) {
+              Write-Warning "NSIS install attempt $attempt failed; retrying"
+              Start-Sleep -Seconds (10 * $attempt)
+            }
+          }
+          if (-not (Test-Path -LiteralPath $makensis)) {
+            throw "NSIS compiler unavailable after three attempts."
+          }
+
+      - name: Validate release version
+        shell: pwsh
+        run: |
+          $packageVersion = (python -c "import antios; print(antios.__version__) ").Trim()
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $releaseVersion = (Get-Content .\release\VERSION -Raw).Trim()
+          if ($packageVersion -ne $releaseVersion) {
+            throw "Version mismatch: package=$packageVersion release=$releaseVersion"
+          }
+
+      - name: Run tests
+        run: python -m pytest -rs
+
+      - name: Validate protection PowerShell syntax
+        shell: pwsh
+        run: |
+          foreach ($path in @(
+            ".\scripts\protection-first-run.ps1",
+            ".\scripts\guard-startup.ps1",
+            ".\scripts\guard-trust.ps1",
+            ".\scripts\dashboard-startup.ps1"
+          )) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path), [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count) {
+              $errors | Format-List | Out-String | Write-Error
+              exit 1
+            }
+          }
+
+      - name: Build Python distributions
+        shell: pwsh
+        run: |
+          python -m build --outdir python-dist
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m twine check .\python-dist\*
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify license files in Python distributions
+        shell: pwsh
+        run: |
+          python -c "import glob,zipfile; w=glob.glob('python-dist/*.whl')[0]; n=zipfile.ZipFile(w).namelist(); assert any(x.endswith('/LICENSE') for x in n), n; assert any(x.endswith('/NOTICE') for x in n), n"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -c "import glob,tarfile; s=glob.glob('python-dist/*.tar.gz')[0]; n=tarfile.open(s).getnames(); assert any(x.endswith('/LICENSE') for x in n), n; assert any(x.endswith('/NOTICE') for x in n), n"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Smoke-test built wheel
+        shell: pwsh
+        run: |
+          python -m venv wheel-smoke
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\wheel-smoke\Scripts\python.exe -m pip install --upgrade pip
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $wheel = (Get-ChildItem .\python-dist\*.whl | Select-Object -First 1).FullName
+          python scripts/release-payload.py verify-wheel $wheel
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\wheel-smoke\Scripts\python.exe -m pip install $wheel
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\wheel-smoke\Scripts\python.exe -I -c "from antios.engine import AntiOSEngine; assert AntiOSEngine().metadata['database_freshness'] == 'local'; print('Native engine wheel: OK')"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\wheel-smoke\Scripts\antios.exe --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\wheel-smoke\Scripts\antios.exe version --json | ConvertFrom-Json | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/smoke-antivirus.py .\wheel-smoke\Scripts\antios.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\wheel-smoke\Scripts\antios-gui.exe --self-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build Windows icon resources
+        shell: pwsh
+        run: |
+          python scripts/build-icons.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($icon in @("app_main.ico", "app_taskbar.ico", "tray_alert.ico", "tray_ok.ico")) {
+            if (-not (Test-Path -LiteralPath (Join-Path ".\build\icons" $icon))) {
+              throw "Missing generated icon: $icon"
+            }
+          }
+
+      - name: Build CLI executable
+        shell: pwsh
+        run: |
+          pyinstaller --clean --noconfirm --onedir --contents-directory _cli --uac-admin --icon .\build\icons\app_main.ico --version-file release/windows-cli-version.txt --console --name AntiOS antios_entry.py
+
+      - name: Build GUI executable
+        shell: pwsh
+        run: |
+          pyinstaller --clean --noconfirm --onedir --contents-directory _gui --icon .\build\icons\app_main.ico --add-data "antios/assets/icons;antios/assets/icons" --version-file release/windows-gui-version.txt --windowed --name AntiOS-GUI antios_gui_entry.py
+
+      - name: Build resident guard executable
+        shell: pwsh
+        run: |
+          pyinstaller --clean --noconfirm --onedir --contents-directory _guard --icon .\build\icons\app_main.ico --add-data "antios/assets/icons;antios/assets/icons" --hidden-import pystray._win32 --version-file release/windows-guard-version.txt --console --name AntiOS-Guard antios_guard_entry.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify Windows resources and scan worker
+        shell: pwsh
+        run: |
+          python scripts/verify-windows-build.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Azure login for Artifact Signing
+        if: github.event_name == 'workflow_dispatch' && inputs.signed_release == true && github.ref == 'refs/heads/master' && vars.ENABLE_ARTIFACT_SIGNING == 'true'
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign Windows executables
+        if: github.event_name == 'workflow_dispatch' && inputs.signed_release == true && github.ref == 'refs/heads/master' && vars.ENABLE_ARTIFACT_SIGNING == 'true'
+        uses: azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82
+        with:
+          endpoint: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+          files-folder: ${{ github.workspace }}\dist
+          files-folder-filter: exe
+          files-folder-recurse: true
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          description: DargonITP AntiOS Antivirus
+          description-url: https://github.com/Dargon777/AntiOS
+
+      - name: Verify application Authenticode signatures
+        if: github.event_name == 'workflow_dispatch' && inputs.signed_release == true && github.ref == 'refs/heads/master' && vars.ENABLE_ARTIFACT_SIGNING == 'true'
+        shell: pwsh
+        run: |
+          foreach ($file in @(".\dist\AntiOS\AntiOS.exe", ".\dist\AntiOS-GUI\AntiOS-GUI.exe", ".\dist\AntiOS-Guard\AntiOS-Guard.exe")) {
+            $signature = Get-AuthenticodeSignature $file
+            Write-Host "$file => $($signature.Status) / $($signature.SignerCertificate.Subject)"
+            if ($signature.Status -ne "Valid") {
+              throw "Invalid Authenticode signature: $file ($($signature.Status))"
+            }
+          }
+
+      - name: Stage Windows installer payload
+        shell: pwsh
+        run: |
+          ./scripts/stage-installer.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build AntiOS Setup
+        shell: pwsh
+        run: |
+          $version = (Get-Content ./release/VERSION -Raw).Trim()
+          $parsed = [regex]::Match($version, '^(\d+)\.(\d+)\.(\d+)a(\d+)$')
+          if (-not $parsed.Success) { throw "Unexpected release version: $version" }
+          $numericVersion = "$($parsed.Groups[1].Value).$($parsed.Groups[2].Value).$($parsed.Groups[3].Value).0"
+          $expectedNumeric = ([regex]::Match((Get-Content ./installer/AntiOS.nsi -Raw), '!define NUMERIC_VERSION "(\d+\.\d+\.\d+\.0)"')).Groups[1].Value
+          if ($numericVersion -ne $expectedNumeric) {
+            throw "Installer numeric version mismatch: computed=$numericVersion default=$expectedNumeric"
+          }
+          $makensis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          $sourceDir = (Resolve-Path "./installer-stage").Path
+          $iconFile = (Resolve-Path "./build/icons/app_main.ico").Path
+          New-Item -ItemType Directory -Force ./installer-output | Out-Null
+          $outputFile = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) "installer-output\AntiOS-Setup.exe"))
+          & $makensis "/DAPP_VERSION=$version" "/DNUMERIC_VERSION=$numericVersion" "/DSOURCE_DIR=$sourceDir" "/DOUTPUT_FILE=$outputFile" "/DICON_FILE=$iconFile" "./installer/AntiOS.nsi"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path -LiteralPath "./installer-output/AntiOS-Setup.exe")) {
+            throw "AntiOS-Setup.exe was not produced"
+          }
+
+      - name: Sign AntiOS Setup
+        if: github.event_name == 'workflow_dispatch' && inputs.signed_release == true && github.ref == 'refs/heads/master' && vars.ENABLE_ARTIFACT_SIGNING == 'true'
+        uses: azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82
+        with:
+          endpoint: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+          files-folder: ${{ github.workspace }}\installer-output
+          files-folder-filter: exe
+          files-folder-recurse: false
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          description: DargonITP AntiOS Setup
+          description-url: https://github.com/Dargon777/AntiOS
+
+      - name: Verify Setup Authenticode signature
+        if: github.event_name == 'workflow_dispatch' && inputs.signed_release == true && github.ref == 'refs/heads/master' && vars.ENABLE_ARTIFACT_SIGNING == 'true'
+        shell: pwsh
+        run: |
+          $signature = Get-AuthenticodeSignature ./installer-output/AntiOS-Setup.exe
+          Write-Host "AntiOS-Setup.exe => $($signature.Status) / $($signature.SignerCertificate.Subject)"
+          if ($signature.Status -ne "Valid") {
+            throw "Invalid Authenticode signature for AntiOS-Setup.exe ($($signature.Status))"
+          }
+
+      - name: Smoke-test previous-release upgrade
+        shell: pwsh
+        run: |
+          ./scripts/smoke-upgrade.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Smoke-test AntiOS Setup
+        shell: pwsh
+        run: |
+          $installDir = Join-Path $env:RUNNER_TEMP "AntiOS-Setup-Smoke"
+          Remove-Item -Recurse -Force $installDir -ErrorAction SilentlyContinue
+          ./installer-output/AntiOS-Setup.exe /S /NOGUARD=1 "/D=$installDir"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($required in @("AntiOS.exe", "AntiOS-GUI.exe", "AntiOS-Guard.exe", "dashboard-startup.ps1", "Uninstall.exe")) {
+            if (-not (Test-Path -LiteralPath (Join-Path $installDir $required))) {
+              throw "Installer smoke missing $required"
+            }
+          }
+          $desktop = [Environment]::GetFolderPath("CommonDesktopDirectory")
+          $desktopShortcut = Join-Path $desktop "AntiOS.lnk"
+          if (-not (Test-Path -LiteralPath $desktopShortcut)) {
+            throw "Installer did not create the desktop shortcut"
+          }
+          $registered = (Get-ItemProperty "HKLM:\Software\DargonITP\AntiOS" -Name InstallDir).InstallDir
+          if ([System.IO.Path]::GetFullPath($registered) -ne [System.IO.Path]::GetFullPath($installDir)) {
+            throw "Registered install directory mismatch: $registered"
+          }
+          & (Join-Path $installDir "AntiOS.exe") --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & (Join-Path $installDir "AntiOS-GUI.exe") --self-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # A junction replacing a packaged runtime directory must abort the
+          # privileged uninstaller before deleting a single external file.
+          $ownedRuntime = Join-Path $installDir "_cli"
+          $savedRuntime = Join-Path $installDir "_cli-before-junction"
+          $externalTarget = Join-Path $env:RUNNER_TEMP "AntiOS-Uninstall-Junction-Trap"
+          New-Item -ItemType Directory -Force $externalTarget | Out-Null
+          "must-preserve" | Set-Content -LiteralPath (Join-Path $externalTarget "Sentinel.txt")
+          Move-Item -LiteralPath $ownedRuntime -Destination $savedRuntime
+          New-Item -ItemType Junction -Path $ownedRuntime -Target $externalTarget | Out-Null
+          try {
+            $reject = Start-Process -FilePath (Join-Path $installDir "Uninstall.exe") -ArgumentList "/S" -PassThru -Wait
+            if ($reject.ExitCode -eq 0) {
+              throw "Uninstaller accepted a substituted runtime junction"
+            }
+            if (-not (Test-Path -LiteralPath (Join-Path $externalTarget "Sentinel.txt"))) {
+              throw "Uninstaller modified a junction target outside AntiOS"
+            }
+          }
+          finally {
+            Remove-Item -LiteralPath $ownedRuntime -Force -ErrorAction SilentlyContinue
+            Move-Item -LiteralPath $savedRuntime -Destination $ownedRuntime -ErrorAction Stop
+            Remove-Item -LiteralPath $externalTarget -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
+          # An administrator-level uninstaller must not recursively delete
+          # unrelated user-owned data from a custom installation directory.
+          $unrelated = Join-Path $installDir "Keep-my-file.txt"
+          $unrelatedFolder = Join-Path $installDir "Keep-my-folder"
+          New-Item -ItemType Directory -Force $unrelatedFolder | Out-Null
+          "foreign-file" | Set-Content -LiteralPath $unrelated -Encoding utf8
+          "foreign-folder" | Set-Content -LiteralPath (Join-Path $unrelatedFolder "data.txt") -Encoding utf8
+          & (Join-Path $installDir "Uninstall.exe") /S
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Start-Sleep -Seconds 2
+          if (-not (Test-Path -LiteralPath $unrelated) -or
+              -not (Test-Path -LiteralPath (Join-Path $unrelatedFolder "data.txt"))) {
+            throw "Uninstaller deleted files that AntiOS did not install"
+          }
+          if (Test-Path -LiteralPath (Join-Path $installDir "_cli")) {
+            throw "Uninstaller did not remove the bundled CLI runtime"
+          }
+          Remove-Item -LiteralPath $unrelated -Force
+          Remove-Item -LiteralPath $unrelatedFolder -Recurse -Force
+          Remove-Item -LiteralPath $installDir -Force -ErrorAction SilentlyContinue
+          if (Test-Path -LiteralPath (Join-Path $installDir "AntiOS-GUI.exe")) {
+            throw "Installer smoke uninstall left AntiOS-GUI.exe behind"
+          }
+          if (Test-Path -LiteralPath $desktopShortcut) {
+            throw "Installer smoke uninstall left the desktop shortcut behind"
+          }
+
+          # A signed, elevated Setup must refuse to deploy via a junction.
+          # A user-writable reparse point is otherwise a file-placement and
+          # privilege-escalation risk before service scripts are executed.
+          $junctionTarget = Join-Path $env:RUNNER_TEMP "AntiOS-Unsafe-Target"
+          $junctionInstall = Join-Path $env:RUNNER_TEMP "AntiOS-Unsafe-Junction"
+          New-Item -ItemType Directory -Force $junctionTarget | Out-Null
+          New-Item -ItemType Junction -Path $junctionInstall -Target $junctionTarget | Out-Null
+          try {
+            $rejected = Start-Process -FilePath (Resolve-Path "./installer-output/AntiOS-Setup.exe").Path -ArgumentList @("/S", "/NOGUARD=1", "/D=$junctionInstall") -Wait -PassThru
+            if ($rejected.ExitCode -eq 0) {
+              throw "Installer incorrectly accepted a reparse-point destination"
+            }
+            if (Test-Path -LiteralPath (Join-Path $junctionTarget "AntiOS.exe")) {
+              throw "Installer wrote privileged files through a junction"
+            }
+          }
+          finally {
+            Remove-Item -LiteralPath $junctionInstall -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $junctionTarget -Recurse -Force -ErrorAction SilentlyContinue
+          }
+      - name: Smoke-test executables
+        shell: pwsh
+        run: |
+          .\dist\AntiOS-Guard\AntiOS-Guard.exe status | ConvertFrom-Json | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          # Exercise the real packaged resident path, not only the status CLI.
+          $guardSmoke = Join-Path $env:RUNNER_TEMP "AntiOS-Guard-Smoke"
+          Remove-Item -Recurse -Force $guardSmoke -ErrorAction SilentlyContinue
+          $watchRoot = Join-Path $guardSmoke "watched"
+          $stateRoot = Join-Path $guardSmoke "state"
+          New-Item -ItemType Directory -Force $watchRoot, $stateRoot | Out-Null
+          $policyPath = Join-Path $guardSmoke "policy.json"
+          @{ schema = 1; roots = @($watchRoot); auto_quarantine = $false } | ConvertTo-Json | Set-Content -LiteralPath $policyPath -Encoding utf8
+
+          $guardProcess = Start-Process -FilePath ".\dist\AntiOS-Guard\AntiOS-Guard.exe" -ArgumentList @("run", "--policy", $policyPath, "--state-dir", $stateRoot) -WindowStyle Hidden -PassThru
+          $running = $false
+          for ($attempt = 0; $attempt -lt 75; $attempt++) {
+            Start-Sleep -Milliseconds 200
+            if ($guardProcess.HasExited) { break }
+            $raw = & ".\dist\AntiOS-Guard\AntiOS-Guard.exe" status --state-dir $stateRoot
+            if ($LASTEXITCODE -eq 0) {
+              try {
+                $status = $raw | ConvertFrom-Json
+                if ($status.running -eq $true -and $status.state -in @("starting", "monitoring", "degraded", "attention", "scanning")) {
+                  $running = $true
+                  break
+                }
+              } catch {}
+            }
+          }
+          if (-not $running) {
+            if (-not $guardProcess.HasExited) { Stop-Process -Id $guardProcess.Id -Force -ErrorAction SilentlyContinue }
+            throw "Packaged AntiOS-Guard.exe did not publish a live heartbeat."
+          }
+
+          & ".\dist\AntiOS-Guard\AntiOS-Guard.exe" stop --state-dir $stateRoot | ConvertFrom-Json | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not $guardProcess.WaitForExit(10000)) {
+            Stop-Process -Id $guardProcess.Id -Force -ErrorAction SilentlyContinue
+            throw "Packaged AntiOS-Guard.exe did not stop after the control request."
+          }
+          if ($guardProcess.ExitCode -ne 0) { throw "Packaged AntiOS-Guard.exe exited with code $($guardProcess.ExitCode)." }
+
+          .\dist\AntiOS\AntiOS.exe --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\dist\AntiOS\AntiOS.exe version --json | ConvertFrom-Json | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\dist\AntiOS\AntiOS.exe coexistence-status --json | ConvertFrom-Json | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\dist\AntiOS\AntiOS.exe config show --json | ConvertFrom-Json | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/smoke-antivirus.py .\dist\AntiOS\AntiOS.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\dist\AntiOS-GUI\AntiOS-GUI.exe --self-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\dist\AntiOS-GUI\AntiOS-GUI.exe --ui-self-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($asset in @(
+            ".\dist\AntiOS-GUI\_gui\antios\assets\icons\app_taskbar.png",
+            ".\dist\AntiOS-Guard\_guard\antios\assets\icons\tray_alert.png",
+            ".\dist\AntiOS-Guard\_guard\antios\assets\icons\tray_ok.png"
+          )) {
+            if (-not (Test-Path -LiteralPath $asset)) {
+              throw "Frozen branding asset missing: $asset"
+            }
+          }
+
+      - name: Package portable release
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force package | Out-Null
+          Copy-Item .\dist\AntiOS\* .\package\ -Recurse -Force
+          Copy-Item .\dist\AntiOS-GUI\* .\package\ -Recurse -Force
+          Copy-Item .\dist\AntiOS-Guard\* .\package\ -Recurse -Force
+          python scripts/release-payload.py stage-runtime .\package
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item .\scripts\install.ps1 .\package\install.ps1
+          Copy-Item .\scripts\uninstall.ps1 .\package\uninstall.ps1
+          Copy-Item .\README.md .\package\README.md
+          Copy-Item .\README.ru.md .\package\README.ru.md
+          Copy-Item .\README.es.md .\package\README.es.md
+          Copy-Item .\README.zh-CN.md .\package\README.zh-CN.md
+          Copy-Item .\README.fi.md .\package\README.fi.md
+          Copy-Item .\README.pl.md .\package\README.pl.md
+          Copy-Item .\README.mn.md .\package\README.mn.md
+          Copy-Item .\PRIVACY.md .\package\PRIVACY.md
+          Copy-Item .\SUPPORT.md .\package\SUPPORT.md
+          Copy-Item .\SECURITY.md .\package\SECURITY.md
+          Copy-Item .\CHANGELOG.md .\package\CHANGELOG.md
+          Copy-Item .\CODE_OF_CONDUCT.md .\package\CODE_OF_CONDUCT.md
+          Copy-Item .\LICENSE .\package\LICENSE
+          Copy-Item .\NOTICE .\package\NOTICE
+          Copy-Item .\docs\SIGNING.md .\package\SIGNING.md
+          Copy-Item .\docs\ANTIVIRUS.md .\package\ANTIVIRUS.md
+          Copy-Item .\docs\GUARD.md .\package\GUARD.md
+          Copy-Item .\docs\COEXISTENCE.md .\package\COEXISTENCE.md
+          $version = (Get-Content .\release\VERSION -Raw).Trim()
+          $commit = "$env:GITHUB_SHA"
+          $python = (python --version 2>&1).Trim()
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $signature = Get-AuthenticodeSignature .\package\AntiOS-GUI.exe
+          $signing = if ($signature.Status -eq "Valid") {
+            "Valid Authenticode: $($signature.SignerCertificate.Subject)"
+          } else {
+            Write-Warning "Unsigned direct-download build; publisher metadata is not Authenticode. See docs/SIGNING.md."
+            "Unsigned direct-download build"
+          }
+          @(
+            "AntiOS version: $version",
+            "Commit: $commit",
+            "Build runner: windows-latest",
+            "Python: $python",
+            "License: Apache-2.0",
+            "Product publisher: DargonITP",
+            "Code signing: $signing"
+          ) | Set-Content .\package\BUILD_INFO.txt
+          "- Authenticode: $signing" | Add-Content $env:GITHUB_STEP_SUMMARY
+          Compress-Archive -Path .\package\* -DestinationPath .\AntiOS-windows-x64.zip -Force
+          python scripts/release-payload.py verify-portable .\AntiOS-windows-x64.zip
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $hash = (Get-FileHash .\AntiOS-windows-x64.zip -Algorithm SHA256).Hash.ToLower()
+          "$hash  AntiOS-windows-x64.zip" | Set-Content -NoNewline .\AntiOS-windows-x64.zip.sha256
+          Copy-Item ./installer-output/AntiOS-Setup.exe ./AntiOS-Setup.exe -Force
+          $setupHash = (Get-FileHash ./AntiOS-Setup.exe -Algorithm SHA256).Hash.ToLower()
+          "$setupHash  AntiOS-Setup.exe" | Set-Content -NoNewline ./AntiOS-Setup.exe.sha256
+
+      - name: Attest Windows archive provenance
+        if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.signed_release == true)) && github.ref == 'refs/heads/master'
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            AntiOS-windows-x64.zip
+            AntiOS-Setup.exe
+
+      - name: Attest Python distribution provenance
+        if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.signed_release == true)) && github.ref == 'refs/heads/master'
+        uses: actions/attest@v4
+        with:
+          subject-path: python-dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AntiOS-release-artifacts
+          path: |
+            AntiOS-windows-x64.zip
+            AntiOS-windows-x64.zip.sha256
+            AntiOS-Setup.exe
+            AntiOS-Setup.exe.sha256
+            python-dist/*
+          if-no-files-found: error
+
+
+
+  build-linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Linux build dependencies
+        run: |
+          set -euo pipefail
+          install_apt_packages() {
+            local packages=("$@")
+            for attempt in 1 2 3; do
+              if sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10 update &&
+                 sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10 install -y "${packages[@]}"; then
+                return 0
+              fi
+              if [ "$attempt" -eq 1 ] && [ -f /etc/apt/apt-mirrors.txt ]; then
+                sudo sed -i 's#https\?://azure.archive.ubuntu.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' /etc/apt/apt-mirrors.txt || true
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          probe_tk() {
+            command -v xvfb-run >/dev/null && command -v xauth >/dev/null &&
+              xvfb-run -a python -c 'import tkinter as tk; root = tk.Tk(); root.withdraw(); root.destroy()'
+          }
+          if ! probe_tk; then
+            install_apt_packages python3-tk xvfb xauth
+            probe_tk
+          fi
+          python -m pip install --upgrade pip
+          python -m pip install pytest pyinstaller -e .
+
+      - name: Validate release version
+        run: |
+          package_version="$(python -c 'import antios; print(antios.__version__)')"
+          release_version="$(tr -d '\r\n' < release/VERSION)"
+          test "$package_version" = "$release_version"
+
+      - name: Test Linux companion surface
+        run: |
+          python -m pytest -rs tests/test_linux_companion.py tests/test_cli.py tests/test_coexistence.py tests/test_windows_companion.py
+          python -m antios coexistence-status --json
+          python -m antios quick-check --json
+
+      - name: Build Linux CLI and GUI
+        run: |
+          pyinstaller --clean --noconfirm --onedir --contents-directory _linux --console --name AntiOS antios_entry.py
+          pyinstaller --clean --noconfirm --onedir --contents-directory _linux_gui --windowed --name AntiOS-GUI antios_gui_entry.py
+          ./dist/AntiOS/AntiOS --version
+          ./dist/AntiOS/AntiOS coexistence-status --json
+
+      - name: Package Linux release
+        run: |
+          mkdir -p linux-package
+          cp -a dist/AntiOS linux-package/
+          cp -a dist/AntiOS-GUI linux-package/
+          cp README.md LICENSE NOTICE docs/LINUX.md linux-package/
+          {
+            echo "AntiOS version: $(tr -d '\r\n' < release/VERSION)"
+            echo "Commit: $GITHUB_SHA"
+            echo "Build runner: ubuntu-24.04"
+            echo "Architecture: x86_64"
+            echo "License: Apache-2.0"
+          } > linux-package/BUILD_INFO.txt
+          tar -C linux-package -czf AntiOS-linux-x64.tar.gz .
+          sha256sum AntiOS-linux-x64.tar.gz > AntiOS-linux-x64.tar.gz.sha256
+
+      - name: Verify packaged Linux GUI
+        run: |
+          smoke_root="$(mktemp -d)"
+          trap 'rm -rf "$smoke_root"' EXIT
+          tar -xzf AntiOS-linux-x64.tar.gz -C "$smoke_root"
+          "$smoke_root/AntiOS-GUI/AntiOS-GUI" --self-test
+          xvfb-run -a "$smoke_root/AntiOS-GUI/AntiOS-GUI" --ui-self-test
+
+      - name: Attest Linux archive provenance
+        if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.signed_release == true)) && github.ref == 'refs/heads/master'
+        uses: actions/attest@v4
+        with:
+          subject-path: AntiOS-linux-x64.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AntiOS-linux-release-artifacts
+          path: |
+            AntiOS-linux-x64.tar.gz
+            AntiOS-linux-x64.tar.gz.sha256
+          if-no-files-found: error
+
+  publish-release:
+    if: github.event_name == 'workflow_dispatch' && inputs.signed_release == true && github.ref == 'refs/heads/master' && vars.ENABLE_ARTIFACT_SIGNING == 'true'
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: AntiOS-release-artifacts
+          path: release-artifacts/windows
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: AntiOS-linux-release-artifacts
+          path: release-artifacts/linux
+
+      - name: Publish combined alpha release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$(tr -d '\r\n' < release/TAG)"
+          # Signed master artifacts may be attached only to the existing draft.
+          # A human must complete acceptance and explicitly publish the release.
+          # Draft releases do not necessarily have an actual git tag yet.
+          # The releases-by-tag endpoint can return 404 for a valid draft.
+          # Resolve its immutable API ID from the authenticated release listing.
+          release_id="$(
+            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
+              jq -er --arg tag "$tag" '
+                [.[][] | select(.tag_name == $tag)] |
+                if length == 1 and .[0].draft == true and (.[0].assets | length) == 0
+                then .[0].id
+                else error("Expected exactly one empty draft for the requested tag")
+                end
+              '
+          )"
+          echo "Signed release target: draft ID $release_id"
+          # Only the eight reviewed deliverables can enter the release draft.
+          # Refuse missing, duplicate, or unexpected files before editing the draft.
+          shopt -s nullglob
+          wheels=(release-artifacts/windows/python-dist/*.whl)
+          sdists=(release-artifacts/windows/python-dist/*.tar.gz)
+          if [[ "${#wheels[@]}" -ne 1 || "${#sdists[@]}" -ne 1 ]]; then
+            echo "Expected one wheel and one source distribution." >&2
+            exit 1
+          fi
+          assets=(
+            release-artifacts/windows/AntiOS-Setup.exe
+            release-artifacts/windows/AntiOS-Setup.exe.sha256
+            release-artifacts/windows/AntiOS-windows-x64.zip
+            release-artifacts/windows/AntiOS-windows-x64.zip.sha256
+            "${wheels[0]}"
+            "${sdists[0]}"
+            release-artifacts/linux/AntiOS-linux-x64.tar.gz
+            release-artifacts/linux/AntiOS-linux-x64.tar.gz.sha256
+          )
+          for file in "${assets[@]}"; do
+            if [[ ! -f "$file" || ! -s "$file" || -L "$file" ]]; then
+              echo "Missing, empty or unsafe release asset: $file" >&2
+              exit 1
+            fi
+          done
+          actual_count="$(find release-artifacts -type f | wc -l | tr -d '[:space:]')"
+          if [[ "$actual_count" != "${#assets[@]}" ]]; then
+            echo "Unexpected additional release payload files; refusing upload." >&2
+            exit 1
+          fi
+
+          (cd release-artifacts/windows &&
+             sha256sum --check AntiOS-Setup.exe.sha256 &&
+             sha256sum --check AntiOS-windows-x64.zip.sha256)
+          (cd release-artifacts/linux &&
+             sha256sum --check AntiOS-linux-x64.tar.gz.sha256)
+          test -s release/RELEASE_NOTES.md
+
+          # An existing tag takes precedence over target_commitish on release.
+          # Refuse any tag whose peeled commit differs from this signed build.
+          tag_refs="$(git ls-remote origin "refs/tags/$tag" "refs/tags/$tag^{}")"
+          tag_commit="$(printf '%s\n' "$tag_refs" | awk -v ref="refs/tags/$tag^{}" '$2 == ref {print $1}')"
+          if [[ -z "$tag_commit" ]]; then
+            tag_commit="$(printf '%s\n' "$tag_refs" | awk -v ref="refs/tags/$tag" '$2 == ref {print $1}')"
+          fi
+          if [[ -n "$tag_commit" && "$tag_commit" != "$GITHUB_SHA" ]]; then
+            echo "Existing release tag does not match signed build commit; refusing upload." >&2
+            exit 1
+          fi
+
+          verify_release_draft() {
+            gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" |
+              jq -e --arg tag "$tag" --arg target "$GITHUB_SHA" '
+                .draft == true and .prerelease == true and
+                .tag_name == $tag and .target_commitish == $target
+              ' >/dev/null
+          }
+
+          # GitHub can clear an unpublished tag when a draft update omits tag_name.
+          jq -n --arg tag "$tag" --arg title "AntiOS $tag" \
+                --arg body "$(cat release/RELEASE_NOTES.md)" \
+                --arg target "$GITHUB_SHA" \
+                '{tag_name:$tag,name:$title,body:$body,target_commitish:$target,draft:true,prerelease:true}' |
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" --input - >/dev/null
+          verify_release_draft
+
+          # Upload by ID through GitHub's release-assets API; tag-based CLI
+          # lookup is unreliable for an untagged draft.
+          for file in "${assets[@]}"; do
+            name="$(basename "$file")"
+            if [[ ! "$name" =~ ^[A-Za-z0-9._-]+$ ]]; then
+              echo "Unsafe release asset name: $name" >&2
+              exit 1
+            fi
+            digest="sha256:$(sha256sum "$file" | cut -d ' ' -f 1)"
+            curl --fail-with-body --silent --show-error --request POST \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "Content-Type: application/octet-stream" \
+              --data-binary "@$file" \
+              "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$release_id/assets?name=$name" \
+              > "$RUNNER_TEMP/antios-upload-result.json"
+            jq -e --arg name "$name" --arg digest "$digest" \
+              '.name == $name and .digest == $digest and .state == "uploaded"' \
+              "$RUNNER_TEMP/antios-upload-result.json" >/dev/null
+          done
+          verify_release_draft
