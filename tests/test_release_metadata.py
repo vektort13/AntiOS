@@ -69,11 +69,11 @@ def test_windows_and_store_versions_track_package_alpha():
     assert f'!define NUMERIC_VERSION "{expected_numeric}"' in installer
 
     store_script = Path("scripts/build-store-msix.ps1").read_text(encoding="utf-8")
-    store_workflow = Path(".github/workflows/store-msix.yml").read_text(encoding="utf-8")
+    store_workflow = Path(".github/workflows/store.yml").read_text(encoding="utf-8")
     assert expected_numeric in store_script
     assert expected_numeric in store_workflow
 
-    release_workflow = Path(".github/workflows/windows-release.yml").read_text(encoding="utf-8")
+    release_workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
     assert "Expected exactly one empty draft for the requested tag" in release_workflow
     assert "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$release_id/assets?name=$name" in release_workflow
     assert 'gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id"' in release_workflow

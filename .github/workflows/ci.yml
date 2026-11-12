@@ -1,0 +1,173 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: antios-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-audit:
+    name: Source audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install audit tools
+        run: python -m pip install "PyYAML>=6,<7" "ruff>=0.13,<1"
+      - name: Check public/private source boundary
+        run: python scripts/check-public-boundary.py
+      - name: Parse and inspect tracked sources
+        run: python scripts/audit-all-sources.py
+      - name: Collect Python security-rule review leads
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p .audit
+          ruff check antios scripts tests --select S --ignore S101,S311 --output-format json > .audit/ruff-security.json || true
+          python -c 'import json; p=json.load(open(".audit/ruff-security.json")); print(f"Python security-rule review leads: {len(p)}")'
+      - name: Preserve audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-audit
+          path: .audit/
+          if-no-files-found: ignore
+          include-hidden-files: true
+
+  tests:
+    name: Tests · ${{ matrix.os }} · Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Select Python Tcl/Tk libraries
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $runtime = python -c "import json, sys, _tkinter; print(json.dumps(dict(prefix=sys.base_prefix, tcl=_tkinter.TCL_VERSION, tk=_tkinter.TK_VERSION)))" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $tcl = Join-Path $runtime.prefix "tcl\tcl$($runtime.tcl)"
+          $tk = Join-Path $runtime.prefix "tcl\tk$($runtime.tk)"
+          if (-not (Test-Path (Join-Path $tcl 'init.tcl')) -or -not (Test-Path (Join-Path $tk 'tk.tcl'))) {
+            throw 'Python Tcl/Tk libraries are incomplete.'
+          }
+          "TCL_LIBRARY=$tcl" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "TK_LIBRARY=$tk" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+          python -m pip install -e .
+      - name: Run test suite
+        run: python -m pytest -rs
+
+  windows-security:
+    name: Windows security acceptance
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+          python -m pip install -e .
+      - name: Parse tracked PowerShell
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $scripts = @(git ls-files '*.ps1' '*.psm1' '*.psd1')
+          $errors = @()
+          foreach ($script in $scripts) {
+            $tokens = $null
+            $issues = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Join-Path (Get-Location) $script), [ref]$tokens, [ref]$issues
+            ) | Out-Null
+            foreach ($issue in $issues) {
+              $errors += ('{0}:{1} {2}' -f $script, $issue.Extent.StartLineNumber, $issue.Message)
+            }
+          }
+          foreach ($issue in $errors) { Write-Error $issue -ErrorAction Continue }
+          if ($errors.Count -gt 0) { exit 1 }
+      - name: Engine and Guard acceptance
+        shell: pwsh
+        run: python -m pytest -v tests/test_unified_engine.py tests/test_guard_unified.py tests/test_native_engine_adversarial.py tests/test_native_runtime_boundary.py tests/test_incident_response.py tests/test_release_payload.py
+      - name: Verify driver Authenticode hashing against SignTool
+        run: python -m pytest -v tests/test_windows_platform_sensors.py::test_pe_authenticode_sha256_matches_signtool
+      - name: Protection capability smoke
+        shell: pwsh
+        run: |
+          $cli = (Get-Command antios -ErrorAction Stop).Source
+          python scripts/smoke-antivirus.py $cli
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $status = antios protection-status --json | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($status.engine.database_freshness -ne 'local') { throw 'AntiOS Engine did not report local signatures.' }
+          if (-not $status.capabilities.standalone_detection_engine) { throw 'Bundled AntiOS Engine failed readiness.' }
+          if ($status.capabilities.pre_execution_blocking -or $status.production_primary_antivirus) {
+            throw 'AntiOS cannot claim unimplemented pre-execution enforcement.'
+          }
+      - name: Installer boundary smoke
+        shell: pwsh
+        run: |
+          ./tests/user-install-uninstall-smoke.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./tests/install-boundary-audit-smoke.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  linux-package:
+    name: Linux package smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get -o Acquire::Retries=2 update
+          sudo apt-get -o Acquire::Retries=2 install -y python3-tk xvfb xauth
+          python -m pip install --upgrade pip
+          python -m pip install pytest pyinstaller -e .
+      - name: Linux companion acceptance
+        run: |
+          python -m pytest -rs tests/test_linux_companion.py tests/test_cli.py tests/test_coexistence.py
+          python -m antios coexistence-status --json
+          python -m antios quick-check --json
+      - name: Build and smoke-test Linux CLI and GUI
+        shell: bash
+        run: |
+          set -euo pipefail
+          pyinstaller --clean --noconfirm --onedir --contents-directory _linux --console --name AntiOS antios_entry.py
+          pyinstaller --clean --noconfirm --onedir --contents-directory _linux_gui --windowed --name AntiOS-GUI antios_gui_entry.py
+          ./dist/AntiOS/AntiOS --version
+          ./dist/AntiOS/AntiOS coexistence-status --json
+          ./dist/AntiOS-GUI/AntiOS-GUI --self-test
+          xvfb-run -a ./dist/AntiOS-GUI/AntiOS-GUI --ui-self-test

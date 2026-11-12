@@ -39,7 +39,7 @@ def test_per_user_installer_manifest_lists_only_source_files():
 
 
 def test_release_publication_requires_enabled_authenticode_signing():
-    workflow = (ROOT / ".github/workflows/windows-release.yml").read_text("utf-8")
+    workflow = (ROOT / ".github/workflows/release.yml").read_text("utf-8")
     assert "Refuse unconfigured signed release" in workflow
     assert "vars.ENABLE_ARTIFACT_SIGNING != 'true'" in workflow
     assert "signed_release:" in workflow

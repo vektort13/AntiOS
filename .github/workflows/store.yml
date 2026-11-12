@@ -1,4 +1,4 @@
-name: AntiOS Store MSIX
+name: Store package
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
       - "store/**"
       - "scripts/build-store-msix.ps1"
       - "release/**"
-      - ".github/workflows/store-msix.yml"
+      - ".github/workflows/store.yml"
   workflow_dispatch:
     inputs:
       identity_name:
