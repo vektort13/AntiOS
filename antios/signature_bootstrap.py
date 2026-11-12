@@ -25,9 +25,8 @@ AKIRA_SUPPLEMENT = (
     "fef09b0aa37cbdb6a8f60a6bd8b473a7e5bffdc7fd2e952444f781574abccf64",
 )
 
-# CISA Code & Media Analysis reports from 2025 identify these exact artifacts
-# as malicious payloads/webshells/trojans. Keep them as exact-hash confirmations;
-# behavioral/YARA-style observations remain review-only elsewhere in AntiOS.
+# CISA reports and advisories published or updated in 2025 identify these exact
+# artifacts as malicious. Keep them as exact-hash confirmations.
 # Sources:
 # - MAR-25993211.r1.v1 (RESURGE / SPAWNSLOTH)
 # - MAR-251132.c1.v1 (credential theft / webshell / PowerShell dropper artifacts)
@@ -46,6 +45,30 @@ CISA_2025_SUPPLEMENT = {
         "ASPX webshell payload (CISA MAR-251132)",
     "d9c4dd5a8317d1d83b5cc3482e95602f721d58e3ba624d131a9472f927d33b00":
         "ASPX PowerShell webshell (CISA MAR-251132)",
+    # AA25-203A, Table 3: rows explicitly identified as encryptors.
+    # https://www.cisa.gov/sites/default/files/2025-07/aa25-203a-stopransomware-interlock-072225.pdf
+    "e86bb8361c436be94b0901e5b39db9b6666134f23cce1e5581421c2981405cb1":
+        "Interlock ransomware encryptor (CISA AA25-203A)",
+    "c733d85f445004c9d6918f7c09a1e0d38a8f3b37ad825cd544b865dba36a1ba6":
+        "Interlock ransomware encryptor (CISA AA25-203A)",
+    "28c3c50d115d2b8ffc7ba0a8de9572fbe307907aaae3a486aabd8c0266e9426f":
+        "Interlock ransomware encryptor (CISA AA25-203A)",
+    # AA23-319A, 2025 update, Tables 2 and 3: encryptor and deployment scripts.
+    # https://www.cisa.gov/sites/default/files/2025-04/aa23-319a-stopransomware-rhysida-ransomware_2.pdf
+    "6633fa85bb234a75927b23417313e51a4c155e12f71da3959e168851a600b010":
+        "Rhysida ransomware encryptor (CISA AA23-319A)",
+    "97766464d0f2f91b82b557ac656ab82e15cae7896b1d8c98632ca53c15cf06c4":
+        "Rhysida ransomware deployment script (CISA AA23-319A)",
+    "918784e25bd24192ce4e999538be96898558660659e3c624a5f27857784cd7e1":
+        "Rhysida ransomware execution script (CISA AA23-319A)",
+    # AA23-352A, 2025 update, Table 2: malware and custom collection tool.
+    # https://www.cisa.gov/sites/default/files/2025-06/aa23-352a-stopransomware-play-ransomware_2.pdf
+    "47b7b2dd88959cd7224a5542ae8d5bce928bfc986bf0d0321532a7515c244a1e":
+        "Play ransomware campaign backdoor (CISA AA23-352A)",
+    "453257c3494addafb39cb6815862403e827947a1e7737eb8168cd10522465deb":
+        "Play ransomware campaign custom data collector (CISA AA23-352A)",
+    "75404543de25513b376f097ceb383e8efb9c9b95da8945fd4aa37c7b2f226212":
+        "SystemBC malware executable (CISA AA23-352A)",
 }
 
 BUNDLED_PACKAGE = b"""

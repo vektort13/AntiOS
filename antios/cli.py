@@ -29,6 +29,7 @@ from .logging_utils import configure_logging
 from .registry import WindowsRegistryBackend, is_windows
 from .quarantine import Quarantine, default_quarantine_path
 from .scan_cache import default_scan_cache_path
+from .scan_acceleration import DEFAULT_GPU_MODE, GPU_MODES
 from .scan_verdict import MAX_REPLAY_BYTES, replay_scan_json
 from .windows_defender import defender_action
 from .report import render_doctor_human, render_operations_human, render_scan_human
@@ -221,6 +222,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="Inspection depth and default workers (default: balanced).")
     av.add_argument("--workers", type=int, metavar="N",
                     help=f"Override the profile's workers, 1..{MAX_SCAN_WORKERS}, subject to CPU limits.")
+    av.add_argument("--gpu-mode", choices=GPU_MODES, default=DEFAULT_GPU_MODE,
+                    help="GPU hashing policy (default: cpu). Scan depth is selected separately.")
     av.add_argument("--no-cache", action="store_true",
                     help="Do not reuse clean results for unchanged files.")
     av.add_argument("--json", action="store_true")
@@ -232,6 +235,7 @@ def build_parser() -> argparse.ArgumentParser:
     benchmark = sub.add_parser("virus-scan-benchmark", help="Check scan profiles on a labeled, inert control corpus.")
     benchmark.add_argument("--profile", choices=tuple(SCAN_PROFILE_WORKERS), help="Default: run all profiles.")
     benchmark.add_argument("--repeat", type=int, choices=range(1, 6), default=3)
+    benchmark.add_argument("--gpu", action="store_true", help="Compare CPU and CUDA on the same inert files.")
     benchmark.add_argument("--json", action="store_true")
 
     catalog = sub.add_parser("signatures", help="Inspect or install a signed AntiOS signature catalog.")
@@ -572,6 +576,7 @@ def main(argv: list[str] | None = None) -> int:
                                 max_files=args.max_files,
                                 workers=args.workers,
                                 profile=args.profile,
+                                gpu_mode=args.gpu_mode,
                                 cache_path=default_scan_cache_path(),
                                 use_cache=not args.no_cache,
                                 excluded_paths=(default_quarantine_path(),))
@@ -599,7 +604,18 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "virus-scan-benchmark":
-            from .scan_benchmark import run_detection_benchmark
+            from .scan_benchmark import run_detection_benchmark, run_gpu_benchmark
+
+            if args.gpu:
+                benchmark = run_gpu_benchmark(profile=args.profile or DEFAULT_SCAN_PROFILE, repeat=args.repeat)
+                if args.json:
+                    _print_json(benchmark)
+                else:
+                    for mode, measurement in benchmark["modes"].items():
+                        print(f"{mode}: median {measurement['median_seconds']:.3f} s, "
+                              f"{measurement['gpu_files']} CUDA hashes per scan")
+                    print("Verdicts and coverage match." if benchmark["passed"] else "GPU benchmark mismatch.")
+                return 0 if benchmark["passed"] else 1
 
             benchmark = run_detection_benchmark(profile=args.profile, repeat=args.repeat)
             if args.json:

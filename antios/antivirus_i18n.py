@@ -1028,6 +1028,21 @@ for _locale, _labels in _SCAN_PROFILE_LABELS.items():
     MESSAGES[_locale].update(zip(("scan_profile", "scan_profile_light", "scan_profile_balanced",
                                   "scan_profile_heavy", "scan_workers", "scan_workers_auto"), _labels))
 
+_GPU_LABELS = {
+    "en": ("GPU mode", "CPU only", "Automatic", "Economy", "Accelerated", "GPU files: {count}", "Continued on CPU"),
+    "ru": ("Режим GPU", "Только CPU", "Автоматический", "Экономичный", "Ускоренный", "Файлы на GPU: {count}", "Продолжено на CPU"),
+    "es": ("Modo GPU", "Solo CPU", "Automático", "Económico", "Acelerado", "Archivos en GPU: {count}", "Continuó en CPU"),
+    "zh-CN": ("GPU 模式", "仅 CPU", "自动", "节能", "加速", "GPU 文件数：{count}", "已切换到 CPU"),
+    "fi": ("GPU-tila", "Vain CPU", "Automaattinen", "Säästö", "Nopeutettu", "GPU-tiedostot: {count}", "Jatkettiin CPU:lla"),
+    "pl": ("Tryb GPU", "Tylko CPU", "Automatyczny", "Oszczędny", "Przyspieszony", "Pliki na GPU: {count}", "Kontynuowano na CPU"),
+    "mn": ("GPU горим", "Зөвхөн CPU", "Автомат", "Хэмнэлттэй", "Хурдасгасан", "GPU файл: {count}", "CPU дээр үргэлжилсэн"),
+}
+for _locale, _labels in _GPU_LABELS.items():
+    MESSAGES[_locale].update(zip(
+        ("scan_gpu_mode", "scan_gpu_cpu", "scan_gpu_auto", "scan_gpu_eco",
+         "scan_gpu_accelerated", "scan_gpu_files", "scan_gpu_fallback"), _labels,
+    ))
+
 MESSAGES["en"].update(protection_active="File monitoring is active",
                       protection_active_detail="AntiOS Guard watches for file changes in the background.",
                       limited="Limited scan coverage")

@@ -53,13 +53,16 @@ def test_application_supplement_is_exact_and_new_signed_catalog_supersedes_it(pu
     cisa_2025 = set(antivirus.CISA_2025_SUPPLEMENT)
     combined = supplemental | cisa_2025
     assert len(supplemental) == 13
-    assert len(cisa_2025) == 7
+    assert len(cisa_2025) == 16
     assert all(len(bytes.fromhex(digest)) == 32 and digest == digest.lower() for digest in combined)
 
     rules, metadata = antivirus.load_managed_signatures()
     assert combined <= rules.keys()
-    assert metadata["signature_bundled_supplement_entries"] == 20
-    assert metadata["signature_cisa_2025_entries"] == 7
+    assert metadata["signature_bundled_supplement_entries"] == 29
+    assert metadata["signature_cisa_2025_entries"] == 16
+    # CISA campaign reports also list legitimate tooling. The published PsExec
+    # hash must not enter the bundled confirmed-threat rules.
+    assert "078163d5c16f64caa5a14784323fd51451b8c831c73396b967b4e35e6879937b" not in rules
 
     catalog.install_catalog(package(4))
     rules, metadata = antivirus.load_managed_signatures()

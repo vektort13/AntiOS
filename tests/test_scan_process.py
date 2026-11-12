@@ -84,11 +84,12 @@ def test_worker_failure_is_not_reported_as_clean(tmp_path):
 
 def test_worker_receives_engine_selection(tmp_path, monkeypatch):
     request, events = tmp_path / 'request', tmp_path / 'events'
-    request.write_text(json.dumps({'path': str(tmp_path), 'engine': 'antios'}))
+    request.write_text(json.dumps({'path': str(tmp_path), 'engine': 'antios', 'gpu_mode': 'eco'}))
     options = []
     monkeypatch.setattr(scan_process, 'scan_files', lambda path, **kwargs: options.append(kwargs))
     assert scan_process.worker_main(str(request), str(events)) == 0
     assert options[0]['engine'] == 'antios'
+    assert options[0]['gpu_mode'] == 'eco'
 
 
 def test_deadline_kills_a_blocked_worker_and_preserves_incomplete_state(tmp_path, monkeypatch):

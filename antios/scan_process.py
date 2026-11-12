@@ -21,6 +21,7 @@ from typing import Callable
 from .antivirus import DEFAULT_SCAN_PROFILE, checked_path, finalize_scan_result, scan_files, utc_now
 from .quarantine import default_quarantine_path
 from .scan_cache import default_scan_cache_path
+from .scan_acceleration import DEFAULT_GPU_MODE
 
 WORKER_FLAG = "--antios-scan-worker"
 
@@ -60,6 +61,7 @@ def worker_main(request_path: str, events_path: str) -> int:
                        worker_files=(Path(request_path), Path(events_path)),
                        workers=request.get("workers"),
                        profile=request.get("profile", DEFAULT_SCAN_PROFILE),
+                       gpu_mode=request.get("gpu_mode", DEFAULT_GPU_MODE),
                        cache_path=default_scan_cache_path(),
                        use_cache=bool(request.get("use_cache", True)))
             emit("done", None)
@@ -109,6 +111,7 @@ def run_scan_process(path: Path, *, signature_path: Path | None = None,
                      require_verified_peer: bool = False,
                      workers: int | None = None,
                      profile: str = DEFAULT_SCAN_PROFILE,
+                     gpu_mode: str = DEFAULT_GPU_MODE,
                      use_cache: bool = True,
                      scratch_dir: Path | None = None,
                      timeout: float | None = None,
@@ -127,6 +130,7 @@ def run_scan_process(path: Path, *, signature_path: Path | None = None,
             "require_verified_peer": bool(require_verified_peer),
             "workers": workers,
             "profile": profile,
+            "gpu_mode": gpu_mode,
             "use_cache": bool(use_cache),
             "signatures": str(signature_path.absolute()) if signature_path else None,
         }), encoding="utf-8")

@@ -29,6 +29,24 @@ Example command:
 
     antios virus-scan PATH --profile heavy --workers 12 --json
 
+## GPU hashing
+
+Manual scans have a GPU mode independent of scan depth and worker count. The Windows scanner can use an NVIDIA CUDA driver to calculate exact SHA-256 hashes for groups of buffered files up to 64 KiB each. Archive and structural inspection still run on the CPU.
+
+| Mode | Behavior |
+| --- | --- |
+| Automatic | Measures one eligible batch. Uses CUDA when the transfer and worker dispatch estimate indicates a gain. |
+| Economy | Uses smaller batches and spaces out CUDA dispatches. Uses the same measured routing. |
+| Accelerated | Uses CUDA for eligible batches after a digest parity check. |
+| CPU only (default) | Computes hashes on the CPU and skips CUDA initialization. |
+
+The scanner continues on the CPU after a CUDA failure. The report lists the requested mode, CUDA file count, calibration and any fallback. Guard uses the CPU for its single-file background checks.
+
+    antios virus-scan PATH --gpu-mode auto --profile balanced --json
+    antios virus-scan-benchmark --gpu --repeat 3 --json
+
+The GPU benchmark compares complete scan times and verdict receipts on identical inert files. Faster hashing can still leave the full scan limited by filesystem reads and CPU inspection.
+
 ## Reports and replay
 
 JSON scan reports include findings, issues, coverage and the decision made from that evidence.

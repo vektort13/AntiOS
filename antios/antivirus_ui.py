@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .antivirus import DEFAULT_SCAN_PROFILE, MAX_SCAN_WORKERS, SCAN_PROFILE_WORKERS
+from .scan_acceleration import DEFAULT_GPU_MODE, GPU_MODES
 from .diagnostics import classify_error, explanation, record_event, recent_events
 from .diagnostics_ui import open_diagnostics
 from .quarantine import Quarantine
@@ -90,6 +91,9 @@ class AntivirusPanel:
         self.profile_labels = {name: self.t("scan_profile_" + name) for name in SCAN_PROFILE_WORKERS}
         self.scan_profile_var = app.tk.StringVar(value=self.profile_labels[profile])
         self.scan_workers_var = app.tk.StringVar(value=str(workers) if workers else self.t("scan_workers_auto"))
+        gpu_mode = getattr(app, "antivirus_gpu_mode", DEFAULT_GPU_MODE)
+        self.gpu_labels = {name: self.t("scan_gpu_" + name) for name in GPU_MODES}
+        self.scan_gpu_var = app.tk.StringVar(value=self.gpu_labels[gpu_mode])
         self._build()
         parent.bind("<Destroy>", self._destroy, add="+")
         parent.bind("<Configure>", self._resize, add="+")
@@ -187,7 +191,7 @@ class AntivirusPanel:
         settings = tk.Frame(form, bg=background)
         settings.grid(row=3, column=0, sticky="ew", columnspan=2)
         settings.grid_columnconfigure(2, weight=1)
-        for column, label in enumerate(("scan_profile", "scan_workers")):
+        for column, label in enumerate(("scan_profile", "scan_workers", "scan_gpu_mode")):
             self._label(settings, self.t(label), color="muted", font=("Segoe UI Semibold", 9)).grid(
                 row=0, column=column, sticky="w", pady=(0, 4))
         self.scan_profile_choice = self.app.ttk.Combobox(
@@ -200,10 +204,15 @@ class AntivirusPanel:
             style="AntiOS.TCombobox",
             values=(self.t("scan_workers_auto"), *(str(n) for n in range(1, MAX_SCAN_WORKERS + 1))),
         )
-        self.scan_workers_choice.grid(row=1, column=1, sticky="w")
+        self.scan_workers_choice.grid(row=1, column=1, sticky="w", padx=(0, 10))
+        self.scan_gpu_choice = self.app.ttk.Combobox(
+            settings, textvariable=self.scan_gpu_var, values=tuple(self.gpu_labels.values()),
+            state="readonly", width=17, style="AntiOS.TCombobox",
+        )
+        self.scan_gpu_choice.grid(row=1, column=2, sticky="w")
 
         actions = tk.Frame(settings, bg=background)
-        actions.grid(row=0, column=2, rowspan=2, sticky="se", padx=(12, 0))
+        actions.grid(row=2, column=0, columnspan=3, sticky="e", pady=(8, 0))
         self.cancel_button = self.app._button(actions, self.t("stop"), self._cancel, kind="secondary")
         self.scan_button = self.app._button(actions, self.t("scan"), self._scan, kind="primary")
         self.scan_button.pack(side="left")
@@ -475,8 +484,10 @@ class AntivirusPanel:
         profile = next(name for name, label in self.profile_labels.items() if label == selected_label)
         selected_workers = self.scan_workers_var.get()
         workers = int(selected_workers) if selected_workers.isdecimal() else None
+        gpu_mode = next(name for name, label in self.gpu_labels.items() if label == self.scan_gpu_var.get())
         self.app.antivirus_scan_profile = profile
         self.app.antivirus_scan_workers = workers
+        self.app.antivirus_gpu_mode = gpu_mode
         cancelled = self.app.antivirus_cancel.is_set
         result_queue = self.app.antivirus_queue
         self._run(
@@ -487,6 +498,7 @@ class AntivirusPanel:
                 engine=engine,
                 profile=profile,
                 workers=workers,
+                gpu_mode=gpu_mode,
                 require_verified_peer=False,
                 cancelled=cancelled,
                 progress=lambda data: result_queue.put(("progress", data)),
@@ -669,6 +681,11 @@ class AntivirusPanel:
                 engine_text += " · " + self.t("catalog_fallback")
             if metadata.get("detail"):
                 engine_text += " · " + metadata["detail"]
+            acceleration = metadata.get("acceleration", {})
+            if acceleration.get("gpu_files"):
+                engine_text += " · " + self.t("scan_gpu_files", count=acceleration["gpu_files"])
+            if acceleration.get("fallback"):
+                engine_text += " · " + self.t("scan_gpu_fallback")
             self.provider_status.configure(text=engine_text)
 
             summary = result["summary"]
@@ -1062,7 +1079,7 @@ class AntivirusPanel:
         self._progress_running = scanning
         for button in self.buttons:
             button.configure(state="disabled" if busy else "normal")
-        for choice in (self.scan_profile_choice, self.scan_workers_choice):
+        for choice in (self.scan_profile_choice, self.scan_workers_choice, self.scan_gpu_choice):
             choice.configure(state="disabled" if busy else "readonly")
 
         guard_companion_missing = (

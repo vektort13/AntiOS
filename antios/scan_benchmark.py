@@ -11,6 +11,7 @@ import time
 import zipfile
 
 from .antivirus import SCAN_PROFILE_WORKERS, scan_files
+from .scan_acceleration import GPU_MODES
 from .scan_verdict import replay_scan_report
 
 
@@ -122,3 +123,54 @@ def run_detection_benchmark(*, profile: str | None = None, repeat: int = 3) -> d
     return {"schema": 1, "kind": "antivirus-detection-benchmark", "corpus": "inert-detection-controls-v1",
             "repeat": repeat, "profiles": results,
             "passed": all(item["passed"] == item["total"] and item["stable_replay"] for item in results.values())}
+
+
+def run_gpu_benchmark(*, profile: str = "balanced", repeat: int = 3) -> dict:
+    """Compare complete scan timings and evidence receipts on identical inert input."""
+    if profile not in SCAN_PROFILE_WORKERS or type(repeat) is not int or not 1 <= repeat <= 5:
+        raise ValueError("Invalid GPU benchmark profile or repetition count")
+    file_count = 1536
+    measurements = {mode: [] for mode in GPU_MODES}
+    receipts = set()
+    expected = 0
+    correct = True
+    with tempfile.TemporaryDirectory(prefix="antios-cuda-controls-") as folder:
+        root = Path(folder)
+        corpus = root / "files"
+        corpus.mkdir()
+        signatures = {}
+        for index in range(file_count):
+            block = hashlib.sha256(f"AntiOS inert GPU benchmark {index}".encode()).hexdigest().encode()
+            content = (block + b"\n") * (32 + index % 240)
+            (corpus / f"fixture-{index:04}.txt").write_bytes(content)
+            if index % 137 == 0:
+                signatures[hashlib.sha256(content).hexdigest()] = "Inert CUDA benchmark signature"
+                expected += 1
+        signature_file = root / "signatures.json"
+        signature_file.write_text(json.dumps({"schema": 1, "sha256": signatures}), encoding="utf-8")
+        for run in range(repeat):
+            for mode in (*GPU_MODES[run % len(GPU_MODES):], *GPU_MODES[:run % len(GPU_MODES)]):
+                started = time.perf_counter()
+                report = scan_files(corpus, signature_path=signature_file, profile=profile,
+                                    gpu_mode=mode, use_cache=False)
+                elapsed = time.perf_counter() - started
+                acceleration = report["engine"]["acceleration"]
+                measurements[mode].append((elapsed, acceleration))
+                replay = replay_scan_report(report)
+                receipts.add(replay["receipt_sha256"])
+                correct &= (replay["dimensions"]["coverage"] == "complete"
+                            and report["summary"]["files_scanned"] == file_count
+                            and report["summary"]["threats"] == expected)
+    modes = {
+        mode: {
+            "median_seconds": round(median(elapsed for elapsed, _ in runs), 6),
+            "gpu_files": int(median(status["gpu_files"] for _, status in runs)),
+            "fallback": next((status["fallback"] for _, status in runs if status["fallback"]), ""),
+            "calibration": next((status["calibration"] for _, status in runs if status["calibration"]), None),
+        }
+        for mode, runs in measurements.items()
+    }
+    return {"schema": 1, "kind": "antivirus-gpu-benchmark", "profile": profile, "repeat": repeat,
+            "files": file_count, "expected_matches": expected, "modes": modes,
+            "cuda_exercised": bool(modes["accelerated"]["gpu_files"]),
+            "passed": bool(correct and len(receipts) == 1)}

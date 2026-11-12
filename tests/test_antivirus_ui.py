@@ -75,7 +75,7 @@ def test_real_tk_page_scan_and_theme_rebuild_share_job_results(tmp_path, monkeyp
 
     def fake_scan(path, **kwargs):
         calls["scan"] += 1
-        calls["settings"].append((kwargs["profile"], kwargs["workers"]))
+        calls["settings"].append((kwargs["profile"], kwargs["workers"], kwargs["gpu_mode"]))
         cancelled = kwargs.get("cancelled") or (lambda: False)
         progress = kwargs.get("progress") or (lambda _data: None)
         if calls["scan"] == 1:
@@ -155,6 +155,7 @@ def test_real_tk_page_scan_and_theme_rebuild_share_job_results(tmp_path, monkeyp
 
         panel.scan_profile_var.set(panel.profile_labels["heavy"])
         panel.scan_workers_var.set("12")
+        panel.scan_gpu_var.set(panel.gpu_labels["eco"])
         panel._scan()
         # The diagnostics window must not disappear or retain destroyed Tk
         # widgets when users switch theme during a live antivirus scan.
@@ -176,9 +177,10 @@ def test_real_tk_page_scan_and_theme_rebuild_share_job_results(tmp_path, monkeyp
         assert app.antivirus_result["summary"]["threats"] == 1
         panel = app.antivirus_panel
         assert panel.engine_var.get() == "antios"
-        assert calls["settings"][0] == ("heavy", 12)
+        assert calls["settings"][0] == ("heavy", 12, "eco")
         assert panel.scan_profile_var.get() == panel.profile_labels["heavy"]
         assert panel.scan_workers_var.get() == "12"
+        assert panel.scan_gpu_var.get() == panel.gpu_labels["eco"]
         assert len(panel.tree.get_children()) == 1
         assert panel.rows["0"]["name"] == "Benign UI test fixture"
         panel.tree.selection_set("0")
