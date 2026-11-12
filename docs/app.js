@@ -7,7 +7,7 @@
     navRecovery: "Recovery",
     navProject: "The project",
     navDownload: "Get AntiOS",
-    heroEyebrow: "INDEPENDENT SECURITY. OPEN SOURCE.",
+    heroEyebrow: "SECURITY AND DIAGNOSTICS. OPEN SOURCE.",
     heroLine1: "Peace of mind.",
     heroLine2: "Under your",
     heroLine3: "control.",
@@ -74,18 +74,18 @@
     recoveryLimit:
       "File recovery does not replace a full system backup and does not guarantee that restored content is malware-free.",
     trustKicker: "BUILT ON TRUST",
-    trustTitle1: "Nothing hidden.",
-    trustTitle2: "No magic promises.",
+    trustTitle1: "Clear capabilities.",
+    trustTitle2: "Explicit limitations.",
     trustIntro:
-      "Good security starts with honest expectations. AntiOS is an independent open-source project with visible capabilities and clear limitations.",
+      "AntiOS is developed in public, with capabilities, limitations and feature status documented without claiming work that is not implemented.",
     source: "Explore the source",
     privacyTitle: "Your data is yours",
     privacyBody:
       "Security and diagnostic data is processed locally by default. AntiOS does not enable automatic project telemetry. Review diagnostic exports before sharing them.",
     privacyLink: "Privacy policy ↗",
-    openTitle: "Open code. Visible progress.",
+    openTitle: "Open source.",
     openBody:
-      "The v2 source is available under Apache 2.0. Releases and automated checks are published on GitHub, so you can follow the project as it develops.",
+      "The AntiOS source is available under Apache 2.0. Releases and automated checks are published on GitHub.",
     openLink: "View automated checks ↗",
     alphaTitle: "Alpha means work in progress",
     alphaBody:
@@ -98,7 +98,7 @@
     downloadTitle1: "Your system.",
     downloadTitle2: "Your rules.",
     downloadIntro:
-      "Take a closer look. Try AntiOS and help shape what comes next.",
+      "Download the current prerelease, or browse the source code and project documentation.",
     releaseButton: "Releases for Windows",
     linuxLink: "Linux companion & documentation",
     downloadWarning:

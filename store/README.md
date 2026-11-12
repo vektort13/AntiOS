@@ -1,63 +1,32 @@
-# AntiOS Microsoft Store package
+# Microsoft Store package
 
-The Store edition packages the **AntiOS GUI**, including on-demand antivirus scans and explicitly confirmed quarantine/restore actions.
+This directory contains the MSIX packaging path for the AntiOS GUI.
 
-It does not package the advanced CLI, so Microsoft Store users receive the antivirus and health/privacy dashboard without the CLI's administrator-only metadata write commands. The GUI requests UAC elevation at startup; the manifest declares the restricted `allowElevation` capability. Microsoft must approve that capability before Store publication. Protection policy is unchanged. The Store identity remains reserved; package generation is not Store certification.
+The Store package is a submission artifact; building it locally does not mean that Microsoft has certified or published that build.
 
-## Why MSIX
+## Current identity
 
-Microsoft Store distribution gives AntiOS:
-
-- a trusted Microsoft signature after certification;
-- clean install/uninstall;
-- Store-managed updates;
-- package identity;
-- no first-download SmartScreen warning for the Store-delivered package.
-
-## Reserved Partner Center identity
-
-AntiOS now has a reserved Microsoft Store identity:
-
-- Package/Identity/Name: `DargonsITP.AntiOS`
-- Package/Identity/Publisher: `CN=D0D34602-FED2-4FE0-B705-18B9041C45F3`
-- Publisher display name: `DargonITP`
-- Store ID: `9P7V8BKW2KG9`
+- Package/Identity/Name: DargonsITP.AntiOS
+- Package/Identity/Publisher: CN=D0D34602-FED2-4FE0-B705-18B9041C45F3
+- Publisher display name: DargonITP
+- Store ID: 9P7V8BKW2KG9
 - Store URL: https://apps.microsoft.com/detail/9P7V8BKW2KG9
 
-These values must match the Partner Center product identity exactly.
+These values must match Partner Center.
 
 ## Build
 
-First build the GUI executable:
+The repository workflow is .github/workflows/store.yml. It builds the GUI and an unsigned MSIX suitable for Partner Center submission.
 
-```powershell
-pyinstaller --clean --noconfirm --onedir --contents-directory _gui --uac-admin --version-file release/windows-gui-version.txt --windowed --name AntiOS-GUI antios_gui_entry.py
-```
+The default package version for the current line is 3.0.2.0.
 
-Then:
+Manual build:
 
-```powershell
-.\scripts\build-store-msix.ps1 `
-  -IdentityName "DargonsITP.AntiOS" `
-  -Publisher "CN=D0D34602-FED2-4FE0-B705-18B9041C45F3" `
-  -PublisherDisplayName "DargonITP" `
-  -PackageVersion "2.0.19.0"
-```
+    python scripts/build-icons.py
+    pyinstaller --clean --noconfirm --onedir --contents-directory _gui --uac-admin --icon .\build\icons\app_main.ico --add-data "antios/assets/icons;antios/assets/icons" --version-file release/windows-gui-version.txt --windowed --name AntiOS-GUI antios_gui_entry.py
 
-Output:
+    .\scripts\build-store-msix.ps1 -IdentityName "DargonsITP.AntiOS" -Publisher "CN=D0D34602-FED2-4FE0-B705-18B9041C45F3" -PublisherDisplayName "DargonITP" -PackageVersion "3.0.2.0"
 
-```text
-store-output\AntiOS.msix
-```
+Output: store-output\AntiOS.msix.
 
-The fourth version component is kept at `.0` for Store submission.
-
-The package is intentionally not production-signed by this script. Microsoft Store signs accepted submissions itself.
-
-## CI
-
-`.github/workflows/store-msix.yml` validates that the Store package can be generated.
-
-Pull requests and manual runs now default to the reserved AntiOS Partner Center identity. The workflow still exposes identity inputs so the package can be rebuilt against a different reserved identity if needed.
-
-The generated artifact is an input for Partner Center, not a substitute for Store certification.
+The local build script does not production-sign the package. Accepted Store submissions are signed by Microsoft through the Store distribution process.

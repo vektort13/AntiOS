@@ -1,15 +1,9 @@
 # Code of Conduct
 
-AntiOS welcomes technically rigorous, respectful collaboration.
+AntiOS welcomes technical discussion, testing and contributions from people with different levels of experience.
 
-Participants are expected to:
+Keep discussion focused on code, behavior and evidence. Harassment, threats, discriminatory abuse, deliberate disruption and publication of another person's private data are not acceptable.
 
-- discuss code, behavior and evidence rather than attacking people;
-- avoid harassment, threats, discriminatory abuse and deliberate disruption;
-- respect security-reporting boundaries and do not post sensitive exploit details publicly;
-- avoid sharing private machine identifiers, backup files, credentials or personal data;
-- respect the project's safety scope described in CONTRIBUTING.md.
+Security vulnerabilities should be reported privately through [SECURITY.md](SECURITY.md), not used as public proof-of-concept material before a fix is available.
 
-Maintainers may edit, hide or remove contributions that violate these expectations and may restrict participation when necessary to protect contributors or the project.
-
-For security vulnerabilities, use the private reporting route described in SECURITY.md rather than public issues.
+Maintainers may close, edit or remove contributions that violate these expectations and may restrict participation when necessary to protect contributors or the project.

@@ -1,20 +1,33 @@
 # AntiOS 3.0.02 Alpha
 
-- The Windows app has a new overview, scan workspace with result filters and quarantine, and a tools section.
-- Light, balanced and heavy profiles let you choose inspection depth and adjust worker count independently.
-- The local engine includes additional SHA-256 signatures and scans folders with many small files faster.
-- New scan reports explain findings and partial coverage. Saved reports support offline verdict replay.
-- The built-in benchmark checks known outcomes on harmless control files.
+This prerelease moves the current Windows app onto the independent AntiOS Engine and refreshes the main scan workflow.
 
-**Downloads.** This prerelease includes Windows x64 Setup and portable ZIP, a Linux x64 archive, and Python distributions. The Windows binaries are unsigned and intended for manual testing. SHA-256 files let you verify the downloads. The automatic installer requires a trusted publisher signature.
+## Changes
 
-**Upgrading from 2.x.** Follow the [installation and migration instructions](https://github.com/Dargon777/AntiOS/blob/V.3.0.02-Alpha/docs/INSTALLER.md) if Setup detects a legacy engine.
+- Redesigned Windows overview, scan workspace, quarantine view and tools section.
+- Added light, balanced and heavy scan profiles with a separate worker setting.
+- Expanded the local SHA-256 signature set and improved folders with many small files.
+- Added clearer scan-coverage reporting and decision replay from saved JSON reports.
+- Added an inert benchmark with known expected outcomes.
+
+## Downloads
+
+The release contains Windows x64 Setup and portable packages, a Linux x86_64 archive and Python distributions.
+
+The Windows binaries in this prerelease are **unsigned**. SHA-256 files verify download integrity but not publisher identity.
+
+## Upgrading from 2.x
+
+Current 3.x builds no longer use the retired managed third-party scan engine. If Setup reports a legacy-installation conflict, follow [docs/INSTALLER.md](../docs/INSTALLER.md) and perform a clean migration instead of deleting services or registrations manually.
 
 ## Русский
 
-- Новый обзор защиты и экран проверки с фильтрами результатов и карантином.
-- Три режима глубины проверки с отдельным выбором числа потоков.
-- Дополнительные сигнатуры и ускоренная проверка папок с мелкими файлами.
-- Подробное покрытие в отчёте, повторный расчёт вердикта и безопасный контрольный набор.
+В этом предварительном релизе Windows-приложение переведено на собственный AntiOS Engine и обновлён основной сценарий проверки.
 
-**Установка.** Windows-сборки без цифровой подписи предназначены для ручного тестирования. Контрольные суммы SHA-256 приложены. Для автоматической установки нужна подпись доверенного издателя.
+- переработаны обзор, экран проверки, карантин и раздел инструментов;
+- добавлены профили Light / Balanced / Heavy и отдельный выбор числа потоков;
+- расширен локальный набор SHA-256 сигнатур;
+- отчёты лучше показывают неполное покрытие и поддерживают replay решения;
+- добавлен безопасный контрольный benchmark.
+
+Windows-сборки этого релиза **не подписаны**. SHA-256 подтверждает целостность файла, но не личность издателя.

@@ -1,30 +1,15 @@
 # Resident Guard
 
-Resident Guard is AntiOS's optional resident protection layer.
+Resident Guard is AntiOS's optional background file-monitoring layer.
 
-## Public behavior
+It watches configured locations, submits relevant file activity to the AntiOS Engine and reports detections, errors and incomplete coverage.
 
-- monitors configured user locations;
-- reacts to relevant file activity;
-- requests scanning through the available AntiOS protection stack;
-- reports detections, errors and incomplete coverage;
-- can isolate confirmed threats only according to explicit product policy;
-- does not claim complete kernel-level pre-execution blocking.
+Guard uses the AntiOS Engine directly; current builds do not install or depend on ClamAV or an AntiOS AMSI provider.
 
-Guard is designed to fail visibly when protection cannot be established.
+## Limits
 
-Resident Guard now scans with the independent AntiOS Engine by default. It
-does not install or connect to ClamAV/AMSI; the older native service is not
-an AntiOS Engine enforcement backend. Guard remains post-write and should not
-be presented as pre-execution malware prevention. The new configuration must
-pass Windows acceptance tests before a production release.
+Guard is post-write monitoring, not a Windows kernel minifilter. It does not claim complete pre-execution blocking.
 
-## Privacy and coexistence
+Confirmed scanner evidence can be handled according to the configured quarantine policy. Behavior-only, sensor-only or posture-only findings remain review evidence.
 
-Guard is local and is intended to coexist with supported security products. AntiOS does not disable Defender or add hidden exclusions as part of normal coexistence.
-
-## Internal design
-
-Public documentation intentionally omits Guard's heartbeat/watchdog behavior, lock/state files, process and task identities, retry timing, event-journal layout, handoff sequencing, collector internals, queue bounds and recovery mechanics.
-
-These details should be discussed only in private engineering documentation.
+If Guard cannot maintain normal monitoring, it should expose a degraded or attention state instead of silently presenting full protection.

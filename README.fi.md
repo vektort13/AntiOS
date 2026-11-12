@@ -2,29 +2,17 @@
 
 [English](README.md) · [Русский](README.ru.md) · [Español](README.es.md) · [简体中文](README.zh-CN.md) · **Suomi** · [Polski](README.pl.md) · [Монгол](README.mn.md)
 
-**AntiOS — Windowsin päätelaitesuojaus- ja järjestelmän ylläpitotyökalu, jossa on täydentävä Linux-tuki.**\n\n> **Nykyinen kehityspuu:** `3.0.2a1`
+AntiOS on Windowsille tarkoitettu päätelaitesuojaus- ja järjestelmän ylläpitoprojekti. Linuxille on suppeampi companion-versio.
 
-Lataa uusin `AntiOS-windows-x64.zip` Releases-sivulta, pura tiedosto ja käynnistä **`AntiOS-GUI.exe`**:
+**Kehitysversio:** 3.0.2a1  
+**Julkaisut:** https://github.com/Dargon777/AntiOS/releases
 
-https://github.com/Dargon777/AntiOS/releases
+Nykyisiä ominaisuuksia ovat paikallinen tiedosto- ja kansioskannaus, valinnainen Resident Guard, karanteeni ja palautus, Windows-diagnostiikka, järjestelmän suojaussensorit sekä tallennus- ja rajatut tiedostojen palautustyökalut.
 
-## Mitä AntiOS tarkistaa
+AntiOS on edelleen esijulkaisu. Se ei väitä olevansa Windowsin sertifioitu ensisijainen virustorjunta eikä tarjoavansa täydellistä ennen suoritusta tapahtuvaa estoa.
 
-- Microsoft Defenderin ja reaaliaikaisen suojauksen;
-- BitLocker-/laitesalauksen;
-- Secure Bootin ja TPM:n;
-- järjestelmäaseman vapaan tilan;
-- odottavan uudelleenkäynnistyksen;
-- yleiset käynnistyssovellukset;
-- Windows-version ja koontiversion;
-- arkkitehtuurin, prosessorin ja käyntiajan.
+Pääkohteet ovat Windows 10 22H2 x64 ja Windows 11 x64. Linux x86_64 on täydentävä companion-versio.
 
-Suomenkielinen Windows valitaan automaattisesti, ja kielen voi vaihtaa myös käsin: **English / Русский / Español / 简体中文 / Suomi / Polski / Монгол**.
+Lisätiedot: [README.md](README.md) · [Antivirus](docs/ANTIVIRUS.md) · [Tietosuoja](PRIVACY.md) · [Tietoturva](SECURITY.md)
 
-Nykyinen kehityspuu sisältää itsenäisen tiedostojen tarkistuksen, valinnaisen taustasuojauksen, karanteenin ja palautuksen, tietoturva- ja järjestelmädiagnostiikan sekä tallennustyökalut. AntiOS käsittelee tiedot oletuksena paikallisesti eikä ota automaattista telemetriaa käyttöön. Katso ajantasainen täydellinen kuvaus ominaisuuksista ja rajoituksista tiedostosta [README.md](README.md).
-
-Virustorjunta ja rajoitukset: [docs/ANTIVIRUS.md](docs/ANTIVIRUS.md).
-
-Täysi dokumentaatio: [README.md](README.md)  
-Tietosuoja: [PRIVACY.md](PRIVACY.md)  
 Lisenssi: Apache-2.0.

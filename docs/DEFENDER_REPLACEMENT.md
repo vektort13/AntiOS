@@ -1,9 +1,7 @@
-# Primary-antivirus readiness
+# Primary-antivirus status
 
-AntiOS does not currently claim to be a certified replacement for Microsoft Defender.
+AntiOS is not currently a certified replacement for Microsoft Defender or another mature primary endpoint-protection product.
 
-A future primary-antivirus claim would require substantially stronger production validation, signing, Windows integration, protected-service hardening, update reliability, failure-injection testing, performance validation and independent security review.
+The project has its own scan engine and optional resident monitoring, but primary Windows antivirus status would require additional platform integration, signing, protected-service hardening, update and recovery validation, performance work and independent security testing.
 
-The exact internal readiness matrix and architecture gates are maintained privately because they expose implementation boundaries and unfinished protection paths.
-
-Until those gates are complete, AntiOS should be described as an independent companion security product rather than a certified primary Windows antivirus.
+For now, AntiOS should be treated as an additional security layer. Keep a trusted primary real-time antivirus enabled unless you are testing AntiOS in an isolated environment.

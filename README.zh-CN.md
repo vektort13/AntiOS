@@ -2,29 +2,17 @@
 
 [English](README.md) · [Русский](README.ru.md) · [Español](README.es.md) · **简体中文** · [Suomi](README.fi.md) · [Polski](README.pl.md) · [Монгол](README.mn.md)
 
-**AntiOS — 面向 Windows 的端点安全与系统维护工具，并提供补充性的 Linux 支持。**\n\n> **当前开发版本：** `3.0.2a1`
+AntiOS 是一个面向 Windows 的端点安全与系统维护项目，并提供功能范围更小的 Linux companion 版本。
 
-从 Releases 页面下载最新的 `AntiOS-windows-x64.zip`，解压后运行 **`AntiOS-GUI.exe`**：
+**开发版本：** 3.0.2a1  
+**发布版本：** https://github.com/Dargon777/AntiOS/releases
 
-https://github.com/Dargon777/AntiOS/releases
+目前包括本地文件与文件夹扫描、可选 Resident Guard、隔离与恢复、Windows 诊断、系统安全传感器、存储工具以及受限的文件恢复功能。
 
-## AntiOS 会检查什么
+AntiOS 仍处于预发布阶段。它不宣称自己是 Windows 认证的主防病毒产品，也不宣称能够在执行前完美阻止所有威胁。
 
-- Microsoft Defender 与实时保护；
-- BitLocker/设备加密；
-- 安全启动与 TPM；
-- 系统盘剩余空间；
-- 是否有待完成的重启；
-- 常见启动应用；
-- Windows 版本与内部版本；
-- 架构、处理器和运行时间。
+主要目标平台为 Windows 10 22H2 x64 和 Windows 11 x64。Linux x86_64 仅作为补充 companion 版本。
 
-简体中文 Windows 会自动使用中文界面，也可以手动切换 **English / Русский / Español / 简体中文 / Suomi / Polski / Монгол**。
+更多信息：[README.md](README.md) · [Antivirus](docs/ANTIVIRUS.md) · [隐私](PRIVACY.md) · [安全](SECURITY.md)
 
-当前开发版本提供独立的按需文件扫描、可选的驻留保护、隔离与恢复、安全和系统诊断以及存储工具。AntiOS 默认在本地处理数据，不启用自动遥测。完整的当前功能与限制请参阅 [README.md](README.md)。
-
-防病毒功能及限制：[docs/ANTIVIRUS.md](docs/ANTIVIRUS.md)。
-
-完整文档：[README.md](README.md)  
-隐私说明：[PRIVACY.md](PRIVACY.md)  
 许可证：Apache-2.0。

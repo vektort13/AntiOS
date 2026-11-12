@@ -1,15 +1,7 @@
 # Risk context
 
-AntiOS can combine several local security signals to improve the context shown to the user.
+AntiOS combines scanner results and local context to decide what deserves attention.
 
-## Public behavior
+Scanner detections carry more authority than weak contextual signals. Process behavior, persistence, memory metadata, driver posture and other sensor evidence can raise review priority or connect an incident, but do not independently prove malware.
 
-- scanner verdicts remain the primary basis for malware enforcement;
-- contextual signals may raise attention without automatically deleting content;
-- unrelated global events are not blindly assigned to every file;
-- incomplete evidence remains visible as uncertainty;
-- the UI may present a combined explanation for why an item deserves review.
-
-## Internal design
-
-Scoring formulas, weights, freshness windows, rule names, thresholds, feature ordering and enforcement cutoffs are intentionally not documented publicly. They are implementation details that could materially simplify tuning attacks against the product.
+The UI should preserve uncertainty when evidence is incomplete instead of presenting a precise-looking score as certainty.

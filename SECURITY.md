@@ -2,32 +2,29 @@
 
 ## Supported versions
 
-AntiOS v2 is pre-release software. Security fixes are made on the latest v2 release line.
+AntiOS is pre-release software. Security fixes are applied to the current development/release line.
 
-| Version | Supported |
+| Version | Security support |
 | --- | --- |
-| 2.0.0 alpha | Yes |
-| Legacy v1 | No |
+| 3.0.x alpha | Yes |
+| 2.x and earlier | No |
 
 ## Reporting a vulnerability
 
-Please do **not** post exploit details, bypass steps, internal trust-boundary weaknesses or sensitive logs in a public issue.
+Please use GitHub private vulnerability reporting / Security Advisory for this repository when available.
 
-Preferred route:
+A useful report includes the affected AntiOS version, Windows or Linux version, reproduction conditions, expected behavior, actual behavior and whether administrator access or local code execution is required.
 
-1. Use GitHub private vulnerability reporting / Security Advisory for this repository when available.
-2. Include the affected version, OS version/build, reproduction conditions, expected behavior and actual behavior.
-3. State whether administrator access, local code execution or special configuration is required.
-4. Remove personal data, secrets, malware samples and unrelated machine identifiers before attaching diagnostics.
+Do not attach unrelated personal data, credentials, malware collections or private machine identifiers.
 
-## Public security boundary
+Please do not publish a working exploit or protection-bypass procedure in a public issue before a fix is available.
 
-AntiOS aims to fail visibly when a scan, provider, update, recovery or protection operation cannot be verified. A failed or incomplete check must not silently become a clean verdict.
+## Project security expectations
 
-Public documentation intentionally does not describe exact internal trust sequences, service/task identities, IPC/state formats, quarantine transaction ordering, validation allowlists, update handoff internals, retry timing, native protocol fields or enforcement thresholds.
+AntiOS should report degraded or incomplete coverage when a security check cannot be completed. An unavailable sensor or failed provider must not be represented as a clean result.
 
-Those details belong in private engineering and security-review material.
+The project is still under active development and has not undergone independent certification as a primary antivirus product.
 
 ## Disclosure
 
-If a report demonstrates a security issue, remediation should be prepared before publishing technical details that would materially reduce the effort required to exploit affected users.
+After a fix is available, technical details can be coordinated so users have a reasonable opportunity to update before exploit details are broadly published.

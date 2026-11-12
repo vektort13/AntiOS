@@ -1,29 +1,27 @@
-# AntiOS Privacy
+# Privacy
 
 AntiOS is designed to process security and diagnostic information locally by default.
 
-## Data AntiOS may read
+## Data processed locally
 
-Depending on the feature, AntiOS may inspect system-health information, selected files and folders, antivirus/provider status, local configuration, quarantine metadata, storage-cleanup candidates and recovery data.
+Depending on the feature, AntiOS may read selected files and folders, file hashes, process and system metadata, protection-provider status, quarantine metadata, storage information, recovery archives and local diagnostic events.
+
+Resident and security-sensor features may also inspect bounded process, driver, persistence and platform-security metadata.
 
 ## Network activity
 
-AntiOS does not include automatic analytics or project telemetry. Network access may occur when the user explicitly opens external links, requests updates, or uses a security provider whose own product may contact its vendor services.
+AntiOS does not enable project analytics or automatic telemetry.
 
-AntiOS does not silently change the privacy policy of Microsoft Defender, Kaspersky, Dr.Web, ClamAV infrastructure or other third-party providers.
+Network access can occur when you explicitly check/download updates, open project links or use a third-party security product that contacts its own vendor services.
 
-## Reports and support data
+## Reports
 
-Exports are created only when requested by the user. Review them before sharing because they may contain local paths, hashes, system information or other diagnostic context.
+Reports and support exports are created locally. Review them before sharing: they can contain file paths, hashes, operating-system information and other machine-specific diagnostic context.
 
-## Local security data
+## Local state
 
-Quarantine, diagnostics, storage history and recovery features keep local state necessary for their operation. Public documentation intentionally does not publish exact storage paths, schemas, temporary-job layouts, retention counters, account-boundary handoffs or repair-process communication details.
+Some features keep local state for quarantine, diagnostics, recovery, configuration and optional history. Removing that state can reduce or reset the related feature history.
 
-The product should expose user-facing controls for viewing, clearing or disabling optional history where applicable.
-
-## Security-sensitive privacy details
-
-Implementation-specific redaction rules, local state layouts and privileged handoff mechanics are maintained in private engineering documentation. This keeps the public privacy policy focused on **what data is processed and where it may leave the machine**, without publishing an operational map of the protection stack.
+AntiOS does not intentionally upload quarantined files, browsing history, passwords or raw process memory as part of normal operation.
 
 For security reports, see [SECURITY.md](SECURITY.md).

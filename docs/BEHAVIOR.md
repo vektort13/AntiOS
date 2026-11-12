@@ -1,19 +1,9 @@
-# Behavior monitoring
+# Behavior context
 
-AntiOS may correlate local security events to provide additional context around suspicious activity.
+AntiOS can use local activity as additional context around a suspicious file or process.
 
-## Public behavior
+Behavior signals are advisory. They can raise review priority or help connect related evidence, but they do not independently authorize file deletion, process termination or quarantine.
 
-- behavioral context is advisory unless a separate trusted scanner confirms a threat;
-- behavior-only signals do not silently delete files or terminate processes;
-- the feature is bounded and designed to avoid unlimited event retention;
-- incomplete collection is surfaced as reduced coverage;
-- behavior context can be shown in local incident views.
+Collection is bounded, and missing events reduce coverage instead of being treated as proof that nothing happened.
 
-## Limitations
-
-Behavior correlation is not a complete EDR event stream and does not prove malicious intent by itself.
-
-## Internal design
-
-Public documentation intentionally omits collector APIs, polling intervals, rule names, scores, thresholds, correlation windows, ring sizes, suppression intervals and internal state mappings. Those parameters are security-sensitive implementation detail and may change without public notice.
+This feature is not a complete EDR event stream and should not be used as one.

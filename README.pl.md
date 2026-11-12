@@ -2,29 +2,17 @@
 
 [English](README.md) · [Русский](README.ru.md) · [Español](README.es.md) · [简体中文](README.zh-CN.md) · [Suomi](README.fi.md) · **Polski** · [Монгол](README.mn.md)
 
-**AntiOS — narzędzie do ochrony endpointów i konserwacji systemu Windows, z uzupełniającym wsparciem Linux.**\n\n> **Bieżące drzewo rozwojowe:** `3.0.2a1`
+AntiOS to projekt ochrony endpointów i narzędzi utrzymania systemu dla Windows, z węższym trybem companion dla Linux.
 
-Pobierz najnowszy `AntiOS-windows-x64.zip` ze strony Releases, rozpakuj archiwum i uruchom **`AntiOS-GUI.exe`**:
+**Wersja rozwojowa:** 3.0.2a1  
+**Wydania:** https://github.com/Dargon777/AntiOS/releases
 
-https://github.com/Dargon777/AntiOS/releases
+Projekt obejmuje lokalne skanowanie plików i folderów, opcjonalny Resident Guard, kwarantannę i przywracanie, diagnostykę Windows, sensory bezpieczeństwa systemu oraz narzędzia pamięci masowej i ograniczonego odzyskiwania plików.
 
-## Co sprawdza AntiOS
+AntiOS jest nadal wersją przedpremierową. Nie deklaruje certyfikacji jako podstawowy antywirus Windows ani idealnego blokowania przed uruchomieniem.
 
-- Microsoft Defender i ochronę w czasie rzeczywistym;
-- BitLocker/szyfrowanie urządzenia;
-- Secure Boot i TPM;
-- wolne miejsce na dysku systemowym;
-- oczekujące ponowne uruchomienie;
-- typowe aplikacje startowe;
-- wersję i kompilację Windows;
-- architekturę, procesor i czas działania.
+Główne cele to Windows 10 22H2 x64 i Windows 11 x64. Linux x86_64 jest dodatkowym trybem companion.
 
-Polski Windows zostanie wykryty automatycznie. Język można też zmienić ręcznie: **English / Русский / Español / 简体中文 / Suomi / Polski / Монгол**.
+Więcej: [README.md](README.md) · [Antivirus](docs/ANTIVIRUS.md) · [Prywatność](PRIVACY.md) · [Bezpieczeństwo](SECURITY.md)
 
-Obecne drzewo rozwojowe zapewnia niezależne skanowanie plików na żądanie, opcjonalną ochronę rezydentną, kwarantannę i przywracanie, diagnostykę bezpieczeństwa i systemu oraz narzędzia pamięci masowej. AntiOS domyślnie przetwarza dane lokalnie i nie włącza automatycznej telemetrii. Pełny aktualny opis możliwości i ograniczeń znajduje się w [README.md](README.md).
-
-Antywirus i ograniczenia: [docs/ANTIVIRUS.md](docs/ANTIVIRUS.md).
-
-Pełna dokumentacja: [README.md](README.md)  
-Prywatność: [PRIVACY.md](PRIVACY.md)  
 Licencja: Apache-2.0.

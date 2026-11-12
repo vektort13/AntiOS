@@ -1,80 +1,63 @@
-# Contributing to AntiOS v2
+# Contributing to AntiOS
 
-Thanks for helping improve AntiOS.
+Thanks for taking the time to improve the project.
 
 ## Development setup
 
-Requirements:
+AntiOS requires Python 3.11 or newer. Most unit tests run on Windows and Linux; Windows-specific integration tests require Windows.
 
-- Python 3.11 or newer
-- Windows for live Registry/system integration tests
-- Linux or Windows for the unit test suite
+    py -3.11 -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+    python -m pip install -U pip pytest
+    python -m pip install -e .
+    python -m pytest
 
-Setup:
+## Repository workflow
 
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -U pip pytest
-python -m pip install -e .
-python -m pytest
-```
+Keep the Git history easy to read.
 
-## Design rules
+- One task or feature should normally use one branch and one pull request.
+- Prefer a small number of meaningful commits. Do not commit every local retry, typo or CI experiment.
+- Keep tests and documentation for a feature in the same PR when they belong to that feature.
+- Use short, descriptive commit and PR titles such as feat:, fix:, test: or docs:.
+- PRs are normally squash-merged into master.
+- Do not create extra PRs, workflow files or architecture documents only to make activity look larger.
 
-Changes to v2 should preserve these boundaries:
+A pull request should explain what changed, why it changed, any compatibility or safety impact, and how it was tested.
 
-1. Dry-run remains the default for system changes.
-2. Every real write must be reversible where practical.
-3. Registry writes require an explicit allowlist entry.
-4. Backup input is untrusted and must never become an arbitrary Registry-write primitive.
-5. Read-only inventory and write-capable operations stay clearly separated.
-6. Logs must not contain scanned fingerprint values, generated identities, secrets, or backup contents.
-7. Do not add anti-cheat, ban, licensing, hardware-serial, storage-serial, network-adapter identity bypasses, or similar evasion functionality.
+## CI
+
+The repository intentionally keeps GitHub Actions small:
+
+- ci.yml — tests, source audit, Windows security acceptance and Linux package smoke;
+- codeql.yml — CodeQL analysis;
+- release.yml — release builds and optional hardened Windows packaging;
+- store.yml — Microsoft Store package build;
+- website.yml — website verification and GitHub Pages deployment.
+
+Do not add a new workflow when an existing job can reasonably own the check.
+
+## Security and safety
+
+Changes should preserve a few project rules:
+
+- failed or incomplete inspection must not silently become a clean result;
+- destructive actions should be explicit and reversible where practical;
+- weak behavioral or posture signals must not independently authorize quarantine;
+- AntiOS must not disable or impersonate another security product as part of coexistence;
+- logs and reports should avoid unnecessary secrets or personal data;
+- do not add credential theft, anti-cheat bypasses, hardware-identity spoofing or similar evasion features.
 
 ## Tests
 
-Every behavior change should include tests. The CI matrix currently covers:
+Behavior changes should include tests when practical. Windows-specific behavior should be covered by a Windows test or acceptance check instead of being inferred from Linux-only tests.
 
-- Windows latest: Python 3.11, 3.12, 3.13
-- Ubuntu latest: Python 3.11, 3.12, 3.13
-- Windows PyInstaller portable build and executable smoke tests
+## Security reports
 
-## Pull requests
+Do not publish working exploit steps or bypass details in a public issue or PR. Use the private reporting route described in [SECURITY.md](SECURITY.md).
 
-Keep pull requests focused. Describe:
+## License
 
-- what changed;
-- why;
-- safety/reversibility implications;
-- test coverage;
-- whether a Windows restart or Administrator privileges are involved.
+The public AntiOS source tree is licensed under Apache-2.0. By submitting a contribution for inclusion, you agree that it can be distributed under that license unless explicitly agreed otherwise.
 
-
-## Licensing contributions
-
-The current AntiOS v2 source tree is licensed under the Apache License 2.0.
-
-Unless you explicitly state otherwise when submitting a contribution, contributions intentionally submitted for inclusion in AntiOS v2 are made under the Apache License 2.0, consistent with Section 5 of the license.
-
-Do not submit code you do not have the right to license. If a contribution incorporates third-party material, clearly identify its origin and license.
-
-
-## Public security documentation
-
-Keep public GitHub text focused on user-visible behavior, compatibility, limitations and test outcomes.
-
-Do **not** publish security-sensitive operational architecture in public pull requests, issues, release notes, READMEs or discussions. This includes exact:
-
-- trust-boundary or privilege-handoff sequencing;
-- internal service, task, process, state-file or IPC identities;
-- watchdog, heartbeat, lock and recovery mechanics;
-- provider-validation and peer-verification order;
-- retry, timeout, queue, cache, correlation or detection thresholds;
-- native protocol fields and enforcement decision flow;
-- updater activation, repair, rollback or postcondition sequencing;
-- unfinished bypasses, exploit proofs or attacker-oriented architecture diagrams.
-
-If a change requires discussion of those details, use a private engineering channel. Security vulnerabilities, bypasses and exploit details must be reported through the private route described in [SECURITY.md](SECURITY.md), not a public issue or pull request.
-
-Public descriptions should explain **what changed for users and what safety guarantee is preserved**, not provide a step-by-step map of the protection implementation.
+Do not submit third-party code or data that you do not have the right to redistribute.

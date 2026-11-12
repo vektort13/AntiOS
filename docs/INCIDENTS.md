@@ -1,13 +1,9 @@
-# Incident correlation
+# Incidents
 
-AntiOS can group related local security evidence into an incident view.
+AntiOS can group related local evidence into an incident so the user can review a set of connected findings instead of isolated log entries.
 
-## Public behavior
+An incident does not create a malware verdict by itself. It links evidence already produced by scanners and security sensors.
 
-- incident views connect relevant evidence already collected by AntiOS;
-- they do not invent malware verdicts;
-- unrelated background activity should not automatically become an incident;
-- incident data is bounded and local;
-- incomplete evidence remains distinguishable from confirmed findings.
+Incident data is local and bounded. Missing or partial evidence remains visible as uncertainty rather than being filled in with assumptions.
 
-Graph-building rules, node/edge schemas, correlation windows, retention limits and evidence-selection thresholds are intentionally omitted from public documentation.
+See also [Incident response](INCIDENT_RESPONSE.md) and [Incident Viewer](INCIDENT_VIEWER.md).

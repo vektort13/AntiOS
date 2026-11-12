@@ -1,15 +1,9 @@
 # File recovery
 
-AntiOS includes bounded file backup and integrity-recovery features.
+AntiOS includes bounded file backup and recovery tools for selected files.
 
-## Public behavior
+Saved content is checked for integrity before it is trusted, and recovery should write to an explicit safe destination rather than silently replacing unrelated files.
 
-- users explicitly select content to protect;
-- integrity is verified before saved content is trusted;
-- recovery writes into a safe destination rather than silently overwriting unrelated files;
-- malformed or unsafe recovery data is rejected;
-- recovery is not a full Windows rollback and not a malware-clean guarantee.
+Recovery archives are treated as untrusted input: malformed paths, inconsistent metadata and integrity failures are rejected.
 
-## Internal design
-
-Archive structure, manifest fields, trust ordering, temporary-file strategy, path-validation implementation and repair/rollback internals are intentionally omitted from public documentation.
+This feature is not a full Windows rollback system and does not guarantee that restored content is malware-free. Scan restored files when appropriate.

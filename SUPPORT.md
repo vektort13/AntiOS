@@ -1,29 +1,14 @@
-# Support AntiOS
+# Support
 
-The best ways to support AntiOS right now are simple:
+For normal project support, use GitHub:
 
-1. **Star the repository** so more people can discover it.
-2. **Share the project** with Windows users who may find it useful.
-3. **Report bugs** with reproducible steps.
-4. **Suggest features** that would make the dashboard genuinely useful.
-5. **Test new releases** on different Windows 10/11 machines.
+- **Bug reports:** https://github.com/Dargon777/AntiOS/issues/new?template=bug_report.yml
+- **Feature requests:** https://github.com/Dargon777/AntiOS/issues/new?template=feature_request.yml
+- **Releases:** https://github.com/Dargon777/AntiOS/releases
+- **Repository:** https://github.com/Dargon777/AntiOS
 
-Repository:
+When reporting a bug, include the AntiOS version, operating system, what you expected, what happened and the smallest reproducible set of steps you can provide.
 
-https://github.com/Dargon777/AntiOS
+Do not post credentials, private diagnostic archives, malware samples or vulnerability details in a public issue. Security problems belong in the private route described in [SECURITY.md](SECURITY.md).
 
-Releases:
-
-https://github.com/Dargon777/AntiOS/releases
-
-Bug report:
-
-https://github.com/Dargon777/AntiOS/issues/new?template=bug_report.yml
-
-Feature request:
-
-https://github.com/Dargon777/AntiOS/issues/new?template=feature_request.yml
-
-## Financial support
-
-A financial-support option may be added later. AntiOS currently prioritizes collecting real user feedback before introducing paid features or subscriptions.
+Financial support may be added later; current development is focused on the product and real-world testing.

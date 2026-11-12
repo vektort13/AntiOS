@@ -1,7 +1,7 @@
 # Incident Viewer
 
-The Incident Viewer presents local security evidence in a human-readable form.
+Incident Viewer presents related local security evidence in a readable form.
 
-It can show related findings and causal context without requiring the user to inspect raw internal event data.
+It is a review interface, not a separate detection engine. The viewer should preserve the distinction between confirmed findings, advisory context and incomplete coverage.
 
-Public documentation intentionally omits the internal incident schema, deduplication keys, event identifiers, graph traversal rules, storage layout and rendering-to-response handoff.
+Raw internal event records do not need to be exposed for the viewer to explain why an incident exists.

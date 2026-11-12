@@ -1,43 +1,24 @@
-# Windows third-party antivirus companion mode
+# Windows security-product companion mode
 
-AntiOS can run as a supplemental layer next to Kaspersky or Dr.Web on Windows.
-It does not try to become the primary registered antivirus and it does not
-modify the vendor product.
+AntiOS can run alongside Microsoft Defender and selected Kaspersky or Dr.Web installations.
 
 ## Discovery
 
-AntiOS reads the antivirus product list exposed by Windows Security Center
-(root/SecurityCenter2) to detect registered Kaspersky/Dr.Web products.
+AntiOS uses read-only Windows and provider information where supported to identify installed security products and report their visible status.
 
-For Kaspersky Endpoint Security for Windows, AntiOS may also use the documented
-read-only command:
+Kaspersky Endpoint Security can expose additional read-only status through its documented command-line interface when available. Dr.Web companion status is based on the supported Windows registration and status information available to AntiOS.
 
-    avp.com STATUS File_Monitoring
+If a provider cannot be queried reliably, AntiOS reports the state as unconfirmed instead of guessing.
 
-File_Monitoring is Kaspersky's File Threat Protection profile. If the command is
-unavailable, blocked by product policy, or emits an unrecognized localized
-state, AntiOS reports real-time state as unconfirmed instead of guessing.
+## Policy
 
-Dr.Web is detected through Windows Security Center registration. AntiOS does
-not invoke a Dr.Web scanner or configuration tool automatically.
+AntiOS does not disable supported third-party products, change their exclusions, start or stop their services, control their quarantine or impersonate Windows primary-antivirus registration.
 
-## Companion policy
+AntiOS scanning uses the independent AntiOS Engine. Current builds do not use ClamAV as a second-opinion backend.
 
-AntiOS never disables Kaspersky or Dr.Web, changes their exclusions, starts or
-stops their services, changes their policies, launches vendor scans
-automatically, controls vendor quarantine, or claims primary-antivirus
-registration.
+Resident Guard remains opt-in because stacking resident scanners can increase system load.
 
-AntiOS continues to provide its own ClamAV second-opinion scanning, Storage
-Intelligence, diagnostics and explicitly enabled Guard.
-
-When a supported vendor's real-time state is confirmed active, the UI treats
-AntiOS as a companion layer. Guard remains explicit opt-in because stacking
-resident scanners can increase disk IO and CPU load.
-
-## Commands
+Useful commands:
 
     antios coexistence-status
     antios protection-status
-
-Both JSON outputs include detected vendor companion information.

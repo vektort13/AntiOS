@@ -1,12 +1,7 @@
 # Code protection
 
-AntiOS uses normal software-hardening practices to raise the cost of tampering and accidental disclosure.
+AntiOS uses ordinary software-hardening and release-integrity measures. Depending on the build, this can include compiled or frozen packaging, integrity checks and digital signatures.
 
-## Public scope
+Hardening raises the cost of casual modification; it does not make the software impossible to reverse engineer.
 
-- hardened build options may be used for Windows distribution;
-- release artifacts may include integrity/signing metadata;
-- sensitive commercial or defensive logic should not depend on public documentation for secrecy;
-- code hardening is not described as encryption or an absolute anti-reversing guarantee.
-
-Exact compiler flags, packaging layout, protected-module boundaries, anti-tamper checks and proprietary interface design are intentionally omitted from public documentation.
+The public repository does not rely on obscurity as its main security boundary. Security decisions should remain safe even when the surrounding application structure is understood.
